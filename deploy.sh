@@ -33,8 +33,8 @@ cmake --build "$BUILD_DIR" -j "$(nproc)"
 
 echo "=== Restart (MODE=$MODE) ==="
 if [[ "$MODE" == "systemd" ]]; then
-  systemctl restart curecraft.service
-  systemctl --no-pager --full status curecraft.service || true
+sudo systemctl restart curecraft.service
+sudo systemctl --no-pager --full status curecraft.service || true
 else
   exec "$APP_PATH"
 fi
