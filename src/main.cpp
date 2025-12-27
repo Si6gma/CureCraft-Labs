@@ -15,10 +15,16 @@ int main()
     while (true)
     {
         char c = read_keypress();
+        unsigned char uc = static_cast<unsigned char>(c);
 
-        std::cout << "Key: '" << c
-                  << "' ASCII: " << static_cast<int>(c) << "\n";
-
+        if (uc >= 32 && uc <= 126)
+        { // printable ASCII
+            std::cout << "Key: '" << c << "'  code=" << (int)uc << "\n";
+        }
+        else
+        {
+            std::cout << "Key: (non-printable) code=" << (int)uc << "\n";
+        }
         if (c == 'q')
             break;
     }
