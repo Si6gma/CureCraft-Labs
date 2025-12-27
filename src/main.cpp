@@ -11,12 +11,13 @@ int main()
     int sum = add(a, b);
     std::cout << "The sum of " << a << " and " << b << " is: " << sum << std::endl;
 
-    InputReader input("/dev/input/event3"); // CHANGE THIS
+    InputReader input("/dev/input/event1"); // Pi keyboard
 
     if (!input.isOpen())
         return 1;
 
     input_event ev;
+    std::cout << "Listening to Pi keyboard... Press Ctrl+C to exit\n";
 
     while (true)
     {
@@ -26,11 +27,11 @@ int main()
         if (ev.type == EV_KEY)
         {
             if (ev.value == 1)
-                std::cout << "Key pressed:  " << ev.code << '\n';
+                std::cout << "Key pressed:  " << ev.code << std::endl;
             else if (ev.value == 0)
-                std::cout << "Key released: " << ev.code << '\n';
+                std::cout << "Key released: " << ev.code << std::endl;
             else if (ev.value == 2)
-                std::cout << "Key repeat:   " << ev.code << '\n';
+                std::cout << "Key repeat:   " << ev.code << std::endl;
         }
     }
 
