@@ -1,22 +1,32 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16)
 
-project(CureCraftLabs VERSION 0.1.0 LANGUAGES CXX)
+# Project name and language
+project(MyApp LANGUAGES CXX)
 
-# Create the executable target
-add_executable(curecraft)
+# Use modern C++
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# C++ standard (target-scoped)
-target_compile_features(curecraft PRIVATE cxx_std_20)
-
-# Includes (your headers live here)
-target_include_directories(curecraft PRIVATE
-  "${PROJECT_SOURCE_DIR}/include"
+# ---- Source files ----
+set(SOURCES
+    src/main.cpp
+    src/math.cpp
 )
 
-# Warnings (good defaults for GCC/Clang on Pi)
-target_compile_options(curecraft PRIVATE
-  -Wall -Wextra -Wpedantic
+# ---- Header files ----
+# (Not strictly required by CMake, but listed for clarity)
+set(HEADERS
+    include/math.h
 )
 
-# Add src/ (where we list sources)
-add_subdirectory(src)
+# ---- Create executable ----
+add_executable(my_app
+    ${SOURCES}
+    ${HEADERS}
+)
+
+# ---- Include directories ----
+target_include_directories(my_app
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+)
