@@ -1,5 +1,20 @@
-#pragma once
+#ifndef INPUT_H
+#define INPUT_H
 
-// Blocks and returns a single key press (no Enter needed)
-// Returns ASCII value of the key
-char read_keypress();
+#include <linux/input.h>
+#include <string>
+
+class InputReader
+{
+public:
+    explicit InputReader(const std::string &devicePath);
+    ~InputReader();
+
+    bool isOpen() const;
+    bool readEvent(input_event &ev);
+
+private:
+    int fd;
+};
+
+#endif
