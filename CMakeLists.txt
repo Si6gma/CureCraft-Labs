@@ -11,12 +11,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SOURCES
     src/main.cpp
     src/math.cpp
+    src/input.cpp
 )
 
 # ---- Header files ----
 # (Not strictly required by CMake, but listed for clarity)
 set(HEADERS
     include/math.h
+    include/input.h
 )
 
 # ---- Create executable ----
