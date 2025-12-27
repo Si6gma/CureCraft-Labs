@@ -1,32 +1,34 @@
 #include "input.h"
-#include <termios.h>
+
+#include <fcntl.h>
 #include <unistd.h>
-#include <cstdlib>
+#include <cstring>
+#include <iostream>
 
-static struct termios old_tio;
-
-static void restore_terminal()
+InputReader::InputReader(const std::string &devicePath)
+    : fd(-1)
 {
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
+    fd = open(devicePath.c_str(), O_RDONLY);
+    if (fd < 0)
+    {
+        std::cerr << "Failed to open " << devicePath
+                  << ": " << strerror(errno) << std::endl;
+    }
 }
 
-char read_keypress()
+InputReader::~InputReader()
 {
-    struct termios new_tio;
+    if (fd >= 0)
+        close(fd);
+}
 
-    // Save terminal state once
-    static bool initialized = false;
-    if (!initialized)
-    {
-        tcgetattr(STDIN_FILENO, &old_tio);
-        new_tio = old_tio;
-        new_tio.c_lflag &= ~(ICANON | ECHO);
-        tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
-        atexit(restore_terminal);
-        initialized = true;
-    }
+bool InputReader::isOpen() const
+{
+    return fd >= 0;
+}
 
-    char c;
-    read(STDIN_FILENO, &c, 1);
-    return c;
+bool InputReader::readEvent(input_event &ev)
+{
+    ssize_t bytes = read(fd, &ev, sizeof(ev));
+    return bytes == sizeof(ev);
 }
