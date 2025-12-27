@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Project name and language
-project(MyApp LANGUAGES CXX)
+project(CureCraft LANGUAGES CXX)
 
 # Use modern C++
 set(CMAKE_CXX_STANDARD 17)
@@ -20,13 +20,13 @@ set(HEADERS
 )
 
 # ---- Create executable ----
-add_executable(my_app
+add_executable(curecraft
     ${SOURCES}
     ${HEADERS}
 )
 
 # ---- Include directories ----
-target_include_directories(my_app
+target_include_directories(curecraft
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
 )
