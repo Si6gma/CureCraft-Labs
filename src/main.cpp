@@ -11,7 +11,7 @@ int main()
     int sum = add(a, b);
     std::cout << "The sum of " << a << " and " << b << " is: " << sum << std::endl;
 
-    InputReader input("/dev/input/event1"); // CHANGE THIS
+    InputReader input("/dev/input/event3"); // CHANGE THIS
 
     if (!input.isOpen())
         return 1;
