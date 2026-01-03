@@ -13,7 +13,7 @@ int main()
     {
         for (int i = 0; i < 100000; i++)
         {
-            std::cout << "This is " << i << std::endl;
+            std::cout << "This is Tim " << i << std::endl;
         }
     }
 
