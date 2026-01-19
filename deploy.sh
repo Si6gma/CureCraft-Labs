@@ -47,11 +47,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=admin
+User=root
 WorkingDirectory=${REPO_DIR}
-Environment="DISPLAY=:0"
-Environment="XAUTHORITY=/home/admin/.Xauthority"
-Environment="QT_QPA_PLATFORM=xcb"
+Environment=\"DISPLAY=:0\"
+Environment=\"QT_QPA_PLATFORM=vnc\"
 ExecStart=${APP_PATH}
 Restart=always
 RestartSec=10
