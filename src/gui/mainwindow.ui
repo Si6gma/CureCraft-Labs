@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">background-color: black; color: white;</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QWidget" name="wTop" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QWidget" name="wWaveforms" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QCustomPlot" name="plotECG" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>220</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCustomPlot" name="plotSpO2" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>170</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCustomPlot" name="plotResp" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>140</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="wVitals" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>240</width>
+           <height>0</height>
+          </size>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QFrame" name="frmHR">
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Raised</enum>
+            </property>
+            <widget class="QLabel" name="lblHRTitle">
+             <property name="geometry">
+              <rect>
+               <x>50</x>
+               <y>10</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>HR</string>
+             </property>
+            </widget>
+            <widget class="QLabel" name="lblHRValue">
+             <property name="geometry">
+              <rect>
+               <x>70</x>
+               <y>60</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>130</string>
+             </property>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frmSpO2">
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Raised</enum>
+            </property>
+            <widget class="QLabel" name="lblSpO2Title">
+             <property name="geometry">
+              <rect>
+               <x>60</x>
+               <y>20</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>SpO2</string>
+             </property>
+            </widget>
+            <widget class="QLabel" name="lblSpO2Value">
+             <property name="geometry">
+              <rect>
+               <x>70</x>
+               <y>60</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>98</string>
+             </property>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frmResp">
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Raised</enum>
+            </property>
+            <widget class="QLabel" name="lblRespTitle">
+             <property name="geometry">
+              <rect>
+               <x>60</x>
+               <y>20</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Resp</string>
+             </property>
+            </widget>
+            <widget class="QLabel" name="lblRespValue">
+             <property name="geometry">
+              <rect>
+               <x>60</x>
+               <y>60</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>35</string>
+             </property>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frmNIBP">
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Raised</enum>
+            </property>
+            <widget class="QLabel" name="lblNIBPTitle">
+             <property name="geometry">
+              <rect>
+               <x>60</x>
+               <y>20</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>NIPB</string>
+             </property>
+            </widget>
+            <widget class="QLabel" name="lblNIBPValue">
+             <property name="geometry">
+              <rect>
+               <x>60</x>
+               <y>60</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>70/50 (56)</string>
+             </property>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frmTemp">
+            <property name="frameShape">
+             <enum>QFrame::Shape::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Raised</enum>
+            </property>
+            <widget class="QLabel" name="lblTempTitle">
+             <property name="geometry">
+              <rect>
+               <x>40</x>
+               <y>20</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Temp</string>
+             </property>
+            </widget>
+            <widget class="QLabel" name="lblTempValue">
+             <property name="geometry">
+              <rect>
+               <x>40</x>
+               <y>70</y>
+               <width>49</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>36.8</string>
+             </property>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="wBottom" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QPushButton" name="btnToggleECG">
+         <property name="text">
+          <string>ECG</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnToggleSpO2">
+         <property name="text">
+          <string>SpO2</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnToggleResp">
+         <property name="text">
+          <string>Resp</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Policy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>230</width>
+           <height>10</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
