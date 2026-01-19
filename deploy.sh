@@ -49,6 +49,8 @@ After=network.target
 Type=simple
 User=admin
 WorkingDirectory=${REPO_DIR}
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/admin/.Xauthority"
 Environment="QT_QPA_PLATFORM=xcb"
 ExecStart=${APP_PATH}
 Restart=always
