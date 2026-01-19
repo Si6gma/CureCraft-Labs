@@ -1,38 +1,17 @@
-# CureCraft-Labs Build & Deploy Guide
+# CureCraft-Labs Setup & Deploy Guide
 
-## First Time Setup (on Linux machine)
+## One-Time Setup
 
 ### 1. Install Dependencies
 
-Run the automated setup script:
-
 ```bash
+cd ~/Code/CureCraft-Labs
 ./setup-dependencies.sh
 ```
 
-This will detect your OS and install:
+This installs: build tools, cmake, ninja, and Qt libraries for Raspberry Pi.
 
-- Build tools (gcc, cmake, ninja)
-- Git
-- Qt6 development libraries (or Qt5 as fallback)
-
-**Manual installation** (if needed):
-
-```bash
-# Ubuntu/Debian/Raspbian
-sudo apt-get install -y build-essential cmake ninja-build git qt6-base-dev libqt6gui6 libqt6widgets6 libqt6core6 libqt6printsupport6 qt6-tools-dev
-
-# If Qt6 packages not found, use Qt5 instead:
-sudo apt-get install -y build-essential cmake ninja-build git qt5-qmake qtbase5-dev libqt5widgets5 libqt5printsupport5 libqt5printsupport5-dev
-
-# Fedora/RHEL
-sudo dnf install -y gcc gcc-c++ cmake ninja-build git qt6-qtbase-devel qt6-qttools-devel
-
-# Arch Linux
-sudo pacman -S base-devel cmake ninja git qt6-base
-```
-
-### 2. Deploy & Build
+### 2. First Deploy
 
 ```bash
 ./deploy.sh
@@ -40,34 +19,28 @@ sudo pacman -S base-devel cmake ninja git qt6-base
 
 This will:
 
-- Fetch latest code from git
-- Auto-detect Qt installation
+- Pull latest code from git
 - Build the project
-- Create/update systemd service
-- Start the service
+- Create/start the systemd service
+- Application runs automatically on boot
 
-## Running the Application
+## Daily Use
 
-### Start the GUI
-
-```bash
-./deploy.sh MODE=run
-```
-
-Or via systemd:
+### Update and Restart
 
 ```bash
-sudo systemctl start curecraft.service
+./deploy.sh
 ```
 
-### View Logs
+That's it. This pulls the latest code, rebuilds, and restarts the service.
+
+### View Live Logs
 
 ```bash
-journalctl -u curecraft.service -f    # Follow logs
-journalctl -u curecraft.service -n 50 # Last 50 lines
+journalctl -u curecraft.service -f
 ```
 
-### Check Status
+### Check Service Status
 
 ```bash
 sudo systemctl status curecraft.service
@@ -79,38 +52,46 @@ sudo systemctl status curecraft.service
 sudo systemctl stop curecraft.service
 ```
 
+### Start Service
+
+```bash
+sudo systemctl start curecraft.service
+```
+
 ## Troubleshooting
 
-### CMake Can't Find Qt
-
-The `deploy.sh` script now automatically searches for Qt in common locations and sets CMAKE_PREFIX_PATH.
-
-If it still fails, manually set:
-
-```bash
-export CMAKE_PREFIX_PATH=/path/to/qt/lib/cmake
-./deploy.sh
-```
-
-Common Qt paths:
-
-- `/opt/Qt/6.x.x/gcc_64/lib/cmake`
-- `/usr/lib/x86_64-linux-gnu/cmake`
-- `$HOME/Qt/6.x.x/gcc_64/lib/cmake`
-
-### Find Qt Installation
-
-```bash
-qmake --version       # Shows Qt location
-find /opt -name "Qt6Config.cmake"
-locate Qt6Config.cmake
-```
-
-### Clean Build
+### Build Fails
 
 ```bash
 rm -rf build/
 ./deploy.sh
+```
+
+### Can't Find Qt
+
+Qt should auto-detect. If it fails:
+
+```bash
+qmake --version  # Check if Qt is installed
+```
+
+If nothing shows up, re-run setup:
+
+```bash
+./setup-dependencies.sh
+```
+
+### Service Won't Start
+
+```bash
+journalctl -u curecraft.service -n 100  # See last 100 log lines
+```
+
+### Manual Build & Run
+
+```bash
+cd ~/Code/CureCraft-Labs/build
+./curecraft
 ```
 
 ## Project Structure
@@ -118,25 +99,21 @@ rm -rf build/
 ```
 CureCraft-Labs/
 ├── src/
-│   ├── main.cpp              # Entry point (starts GUI)
+│   ├── main.cpp           # Entry point (starts GUI)
 │   ├── math.cpp
-│   └── gui/                  # Patient Monitor GUI
+│   └── gui/               # Patient Monitor GUI
 │       ├── mainwindow.cpp
 │       ├── mainwindow.ui
 │       └── qcustomplot.cpp
-├── include/                  # Headers
+├── include/               # Headers
 ├── CMakeLists.txt
-├── deploy.sh                 # Build & deploy script
-└── setup-dependencies.sh     # Install build requirements
+├── deploy.sh              # Update code and restart
+└── setup-dependencies.sh  # Install requirements (run once)
 ```
 
-## Systemd Service
+## What Happens on Boot
 
-The service is automatically created at: `/etc/systemd/system/curecraft.service`
-
-It will:
-
-- Start automatically on boot
-- Auto-restart on crash (10 sec delay)
-- Run as `admin` user
-- Log to journalctl
+1. Systemd starts `curecraft.service` automatically
+2. App runs in background, logs to journalctl
+3. If it crashes, it auto-restarts after 10 seconds
+4. View logs with: `journalctl -u curecraft.service -f`
