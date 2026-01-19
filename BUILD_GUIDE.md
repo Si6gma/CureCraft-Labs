@@ -19,8 +19,11 @@ This will detect your OS and install:
 **Manual installation** (if needed):
 
 ```bash
-# Ubuntu/Debian
-sudo apt-get install -y build-essential cmake ninja-build git qt6-base-dev qt6-base-private-dev libqt6printsupport6-dev
+# Ubuntu/Debian/Raspbian
+sudo apt-get install -y build-essential cmake ninja-build git qt6-base-dev libqt6gui6 libqt6widgets6 libqt6core6 libqt6printsupport6 qt6-tools-dev
+
+# If Qt6 packages not found, use Qt5 instead:
+sudo apt-get install -y build-essential cmake ninja-build git qt5-qmake qtbase5-dev libqt5widgets5 libqt5printsupport5 libqt5printsupport5-dev
 
 # Fedora/RHEL
 sudo dnf install -y gcc gcc-c++ cmake ninja-build git qt6-qtbase-devel qt6-qttools-devel

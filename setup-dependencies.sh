@@ -18,8 +18,8 @@ fi
 info "Detected OS: $OS"
 
 case "$OS" in
-    ubuntu|debian)
-        info "Setting up for Debian/Ubuntu..."
+    ubuntu|debian|raspbian)
+        info "Setting up for Debian/Ubuntu/Raspbian..."
         sudo apt-get update
         
         # Build tools
@@ -28,24 +28,35 @@ case "$OS" in
             build-essential \
             cmake \
             ninja-build \
-            git
+            git \
+            pkg-config
         
-        # Qt6 development libraries (recommended)
-        info "Installing Qt6 development libraries..."
+        # Try Qt6 first with flexible package matching
+        info "Attempting to install Qt6 development libraries..."
+        
+        # Install Qt6 packages that are likely available
         sudo apt-get install -y \
             qt6-base-dev \
-            qt6-base-private-dev \
             libqt6gui6 \
             libqt6widgets6 \
             libqt6core6 \
             libqt6printsupport6 \
-            libqt6printsupport6-dev \
-            qt6-tools-dev
+            qt6-tools-dev 2>/dev/null || true
         
-        # Alternative: Qt5 (if Qt6 not available)
-        # sudo apt-get install -y qt5-qmake qt5-default libqt5widgets5-dev libqt5printsupport5-dev
+        # Check if qmake is available, if not fall back to Qt5
+        if ! qmake --version 2>/dev/null | grep -q "Qt"; then
+            info "Qt6 not fully available, installing Qt5 as fallback..."
+            sudo apt-get install -y \
+                qt5-qmake \
+                libqt5core5a \
+                libqt5gui5 \
+                libqt5widgets5 \
+                libqt5printsupport5 \
+                libqt5printsupport5-dev \
+                qtbase5-dev
+        fi
         
-        info "Done! Qt6 should now be available."
+        info "Done! Qt should now be available."
         ;;
     
     fedora|rhel|centos)
@@ -75,7 +86,7 @@ case "$OS" in
         ;;
     
     *)
-        die "Unsupported OS: $OS. Please manually install Qt6 development libraries."
+        die "Unsupported OS: $OS. Please manually install Qt development libraries."
         ;;
 esac
 
