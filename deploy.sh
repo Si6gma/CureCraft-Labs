@@ -19,6 +19,38 @@ need git
 need cmake
 need ninja
 
+# ---- Qt Setup ----
+echo "=== Checking Qt installation ==="
+QT_PATH=""
+
+# Try common Qt installation paths
+for QT_CANDIDATE in \
+    /opt/Qt \
+    /usr/lib/x86_64-linux-gnu/cmake/Qt6 \
+    /usr/lib/x86_64-linux-gnu/cmake/Qt5 \
+    /usr/local/opt/qt \
+    "$HOME/Qt"; do
+    if [[ -d "$QT_CANDIDATE" ]]; then
+        QT_PATH="$QT_CANDIDATE"
+        echo "Found Qt at: $QT_PATH"
+        break
+    fi
+done
+
+if [[ -z "$QT_PATH" ]]; then
+    echo "WARNING: Qt not found in common locations"
+    echo "Attempting to use system Qt (if installed via package manager)..."
+    # Try to find via pkg-config or let CMake search system paths
+    QT_PATH=$(pkg-config --variable=libdir Qt6Core 2>/dev/null || echo "")
+fi
+
+# Set CMAKE_PREFIX_PATH if Qt found
+CMAKE_PREFIX_PATH=""
+if [[ -n "$QT_PATH" ]]; then
+    CMAKE_PREFIX_PATH="-DCMAKE_PREFIX_PATH=$QT_PATH"
+    echo "Using Qt path: $QT_PATH"
+fi
+
 cd "$REPO_DIR" || die "Repo not found: $REPO_DIR"
 git rev-parse --is-inside-work-tree >/dev/null
 
@@ -28,7 +60,7 @@ git reset --hard "$REMOTE/$BRANCH"
 git submodule update --init --recursive
 
 echo "=== Build ==="
-cmake -S "$REPO_DIR" -B "$BUILD_DIR" -G Ninja
+cmake -S "$REPO_DIR" -B "$BUILD_DIR" -G Ninja $CMAKE_PREFIX_PATH
 cmake --build "$BUILD_DIR" -j "$(nproc)"
 
 [[ -x "$APP_PATH" ]] || die "Binary not found/executable: $APP_PATH"
