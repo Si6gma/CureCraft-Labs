@@ -11,10 +11,7 @@ int main(int argc, char *argv[])
 
     // Create and show the Patient Monitor GUI
     MainWindow window;
-    window.show();
-
-    // Uncomment the line below for fullscreen mode (e.g., for Raspberry Pi)
-    // window.showFullScreen();
+    window.showFullScreen();
 
     std::cout << "CureCraft Patient Monitor started" << std::endl;
 
