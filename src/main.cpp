@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
     // Create and show the Patient Monitor GUI
     MainWindow window;
-    window.showFullScreen();
+    window.show();
 
     std::cout << "CureCraft Patient Monitor started" << std::endl;
 
