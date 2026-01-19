@@ -16,6 +16,10 @@ SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
 die() { echo "ERROR: $*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null || die "Missing: $1"; }
 
+# Detect number of cores for parallel build
+NUM_CORES=$(nproc || echo 4)
+BUILD_JOBS=$((NUM_CORES + 1))  # One more than cores for optimal throughput
+
 need git
 need cmake
 need ninja
@@ -30,12 +34,11 @@ git reset --hard "$REMOTE/$BRANCH"
 git submodule update --init --recursive
 
 # Build
-echo "=== Building ==="
-rm -rf "$BUILD_DIR"
+echo "=== Building (incremental, $BUILD_JOBS parallel jobs) ==="
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
-cmake -G Ninja ..
-ninja
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -march=native" .. || cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -march=native" ..
+ninja -j "$BUILD_JOBS"
 
 [[ -x "$APP_PATH" ]] || die "Build failed: $APP_PATH not found"
 
