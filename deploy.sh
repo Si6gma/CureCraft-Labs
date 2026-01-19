@@ -36,9 +36,16 @@ git submodule update --init --recursive
 # Build
 echo "=== Building (incremental, $BUILD_JOBS parallel jobs) ==="
 mkdir -p "$BUILD_DIR"
-cd "$BUILD_DIR"
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -march=native" .. || cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -march=native" ..
-ninja -j "$BUILD_JOBS"
+cd "$BUILD_DIR" || die "Failed to enter build directory"
+
+# Only reconfigure if CMakeLists.txt or CMakeCache changed
+if [[ ! -f CMakeCache.txt ]] || [[ ../CMakeLists.txt -nt CMakeCache.txt ]]; then
+    echo "Configuring CMake..."
+    cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -march=native" .. || die "CMake configuration failed"
+fi
+
+# Incremental build with parallel jobs
+ninja -j "$BUILD_JOBS" || die "Build failed"
 
 [[ -x "$APP_PATH" ]] || die "Build failed: $APP_PATH not found"
 
