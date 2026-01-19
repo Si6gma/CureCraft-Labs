@@ -7,6 +7,8 @@ BRANCH="main"
 BUILD_DIR="${REPO_DIR}/build"
 APP_NAME="curecraft"
 APP_PATH="${BUILD_DIR}/${APP_NAME}"
+SERVICE_NAME="curecraft.service"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
 
 MODE="${MODE:-systemd}" # systemd | run
 
@@ -31,12 +33,36 @@ cmake --build "$BUILD_DIR" -j "$(nproc)"
 
 [[ -x "$APP_PATH" ]] || die "Binary not found/executable: $APP_PATH"
 
-echo "=== Restart (MODE=$MODE) ==="
+echo "=== Setup systemd service ==="
 if [[ "$MODE" == "systemd" ]]; then
-sudo systemctl restart curecraft.service
-sudo systemctl --no-pager --full status curecraft.service || true
+    SERVICE_CONTENT="[Unit]
+Description=CureCraft Patient Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=${REPO_DIR}
+ExecStart=${APP_PATH}
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+"
+    
+    echo "$SERVICE_CONTENT" | sudo tee "$SERVICE_FILE" > /dev/null
+    sudo systemctl daemon-reload
+    
+    echo "=== Restart (MODE=systemd) ==="
+    sudo systemctl restart "${SERVICE_NAME}"
+    sleep 2
+    sudo systemctl --no-pager --full status "${SERVICE_NAME}" || true
 else
-  exec "$APP_PATH"
+    echo "=== Running directly (MODE=run) ==="
+    exec "$APP_PATH"
 fi
 
 echo "=== Done ==="
