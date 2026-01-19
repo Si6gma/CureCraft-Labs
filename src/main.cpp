@@ -1,21 +1,22 @@
 #include <iostream>
+#include <QApplication>
 
 #include "math.h"
+#include "mainwindow.h"
 
-int main()
+int main(int argc, char *argv[])
 {
-    int a = 5;
-    int b = 120;
-    int sum = add(a, b);
-    std::cout << "The sum of " << a << " and " << b << " is: " << sum << std::endl;
+    // Initialize Qt Application
+    QApplication app(argc, argv);
 
-    while (true)
-    {
-        for (int i = 0; i < 100000; i++)
-        {
-            std::cout << "This is Tim " << i << std::endl;
-        }
-    }
+    // Create and show the Patient Monitor GUI
+    MainWindow window;
+    window.show();
 
-    return 0;
+    // Uncomment the line below for fullscreen mode (e.g., for Raspberry Pi)
+    // window.showFullScreen();
+
+    std::cout << "CureCraft Patient Monitor started" << std::endl;
+
+    return app.exec();
 }
