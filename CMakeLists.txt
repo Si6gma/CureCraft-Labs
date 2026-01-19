@@ -6,6 +6,20 @@ project(CureCraft LANGUAGES CXX)
 # Use modern C++
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+
+# Optimization flags for Raspberry Pi
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Enable LTO (Link Time Optimization) for smaller, faster binaries
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported)
+if(ipo_supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 # ---- Qt Configuration for GUI ----
 set(CMAKE_AUTOUIC ON)
@@ -38,6 +52,7 @@ set(HEADERS
 # ---- Create QCustomPlot as a static library ----
 add_library(qcustomplot STATIC src/gui/qcustomplot.cpp)
 target_include_directories(qcustomplot PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_compile_options(qcustomplot PRIVATE -fno-exceptions -fno-rtti)
 target_link_libraries(qcustomplot PUBLIC
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::PrintSupport
@@ -57,6 +72,21 @@ else()
         ${GUI_SOURCES}
         ${HEADERS}
     )
+endif()
+
+# Compiler optimizations
+target_compile_options(curecraft PRIVATE
+    -O2
+    -march=native
+    -fno-exceptions
+    -fno-rtti
+    -ffunction-sections
+    -fdata-sections
+)
+
+# Linker optimizations
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_link_options(curecraft PRIVATE -Wl,--gc-sections -Wl,-s)
 endif()
 
 # Link libraries
