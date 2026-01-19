@@ -5,15 +5,14 @@
 #include <QtGlobal>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
     setupPlots();
 
-    // 20 ms = 50 Hz GUI update. On Raspberry Pi you can lower to 25–40 ms if needed.
-    timer_.setInterval(20);
+    // 50 ms = 20 Hz GUI update. Optimized for Raspberry Pi performance.
+    timer_.setInterval(50);
     connect(&timer_, &QTimer::timeout, this, &MainWindow::onTick);
     timer_.start();
 
@@ -31,7 +30,8 @@ MainWindow::~MainWindow()
 void MainWindow::setupPlots()
 {
     // Common styling helper lambda
-    auto stylePlot = [&](QCustomPlot* p) {
+    auto stylePlot = [&](QCustomPlot *p)
+    {
         p->setBackground(QBrush(Qt::black));
         p->xAxis->setBasePen(QPen(Qt::gray));
         p->yAxis->setBasePen(QPen(Qt::gray));
@@ -69,12 +69,13 @@ void MainWindow::setupPlots()
     ui->plotResp->xAxis->setRange(0, windowSeconds_);
 }
 
-void MainWindow::pushSample(QVector<double>& x, QVector<double>& y, double t, double v)
+void MainWindow::pushSample(QVector<double> &x, QVector<double> &y, double t, double v)
 {
     x.push_back(t);
     y.push_back(v);
 
-    if (x.size() > maxPoints_) {
+    if (x.size() > maxPoints_)
+    {
         int extra = x.size() - maxPoints_;
         x.remove(0, extra);
         y.remove(0, extra);
@@ -100,25 +101,36 @@ void MainWindow::onTick()
     double resp = 0.6 * std::sin(2.0 * M_PI * 0.3 * t_);
     // ---------------------------------------------------------------
 
-    pushSample(xECG_,  yECG_,  t_, ecg);
+    pushSample(xECG_, yECG_, t_, ecg);
     pushSample(xSpO2_, ySpO2_, t_, spo2);
     pushSample(xResp_, yResp_, t_, resp);
 
     const double left = t_ - windowSeconds_;
     const double right = t_;
 
+    // Batch replot: only update if at least one plot is visible
+    bool needsReplot = ui->plotECG->isVisible() || ui->plotSpO2->isVisible() || ui->plotResp->isVisible();
+
+    if (!needsReplot)
+    {
+        return; // Skip all updates if nothing visible
+    }
+
     // Update plots ONLY if visible (performance)
-    if (ui->plotECG->isVisible()) {
+    if (ui->plotECG->isVisible())
+    {
         ui->plotECG->graph(0)->setData(xECG_, yECG_);
         ui->plotECG->xAxis->setRange(left, right);
         ui->plotECG->replot(QCustomPlot::rpQueuedReplot);
     }
-    if (ui->plotSpO2->isVisible()) {
+    if (ui->plotSpO2->isVisible())
+    {
         ui->plotSpO2->graph(0)->setData(xSpO2_, ySpO2_);
         ui->plotSpO2->xAxis->setRange(left, right);
         ui->plotSpO2->replot(QCustomPlot::rpQueuedReplot);
     }
-    if (ui->plotResp->isVisible()) {
+    if (ui->plotResp->isVisible())
+    {
         ui->plotResp->graph(0)->setData(xResp_, yResp_);
         ui->plotResp->xAxis->setRange(left, right);
         ui->plotResp->replot(QCustomPlot::rpQueuedReplot);
