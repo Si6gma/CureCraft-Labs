@@ -3,15 +3,23 @@
 
 #include <cmath>
 #include <QtGlobal>
+#include <algorithm>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
     setupPlots();
 
-    // 50 ms = 20 Hz GUI update. Optimized for Raspberry Pi performance.
+    // Reserve space to prevent reallocations (deque pre-allocates)
+    xECG_.resize(maxPoints_);
+    yECG_.resize(maxPoints_);
+    xSpO2_.resize(maxPoints_);
+    ySpO2_.resize(maxPoints_);
+    xResp_.resize(maxPoints_);
+    yResp_.resize(maxPoints_);
+
+    // 50 ms = 20 Hz GUI update. Optimized for Raspberry Pi.
     timer_.setInterval(50);
     connect(&timer_, &QTimer::timeout, this, &MainWindow::onTick);
     timer_.start();
@@ -24,27 +32,35 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    timer_.stop();
     delete ui;
 }
 
 void MainWindow::setupPlots()
 {
+    // Reusable pens and brushes to reduce allocations
+    const QPen grayPen(Qt::gray);
+    const QPen lightGrayPen(Qt::lightGray);
+    const QBrush blackBrush(Qt::black);
+
     // Common styling helper lambda
     auto stylePlot = [&](QCustomPlot *p)
     {
-        p->setBackground(QBrush(Qt::black));
-        p->xAxis->setBasePen(QPen(Qt::gray));
-        p->yAxis->setBasePen(QPen(Qt::gray));
-        p->xAxis->setTickPen(QPen(Qt::gray));
-        p->yAxis->setTickPen(QPen(Qt::gray));
-        p->xAxis->setSubTickPen(QPen(Qt::gray));
-        p->yAxis->setSubTickPen(QPen(Qt::gray));
+        p->setBackground(blackBrush);
+        p->xAxis->setBasePen(grayPen);
+        p->yAxis->setBasePen(grayPen);
+        p->xAxis->setTickPen(grayPen);
+        p->yAxis->setTickPen(grayPen);
+        p->xAxis->setSubTickPen(grayPen);
+        p->yAxis->setSubTickPen(grayPen);
         p->xAxis->setTickLabelColor(Qt::lightGray);
         p->yAxis->setTickLabelColor(Qt::lightGray);
 
         p->legend->setVisible(false);
-        p->setNotAntialiasedElements(QCP::aeAll); // can improve performance on weak GPUs
+        p->setNotAntialiasedElements(QCP::aeAll); // Disable antialiasing for weak GPUs
         p->setNoAntialiasingOnDrag(true);
+        p->setInteraction(QCP::iRangeDrag, false);
+        p->setInteraction(QCP::iRangeZoom, false);
 
         p->addGraph();
         p->graph(0)->setAdaptiveSampling(true);
@@ -52,33 +68,34 @@ void MainWindow::setupPlots()
 
     // ECG
     stylePlot(ui->plotECG);
-    ui->plotECG->graph(0)->setPen(QPen(Qt::green));
+    ui->plotECG->graph(0)->setPen(QPen(Qt::green, 1.5));
     ui->plotECG->yAxis->setRange(-0.2, 1.8);
     ui->plotECG->xAxis->setRange(0, windowSeconds_);
 
     // SpO2
     stylePlot(ui->plotSpO2);
-    ui->plotSpO2->graph(0)->setPen(QPen(QColor(200, 80, 255))); // purple
+    ui->plotSpO2->graph(0)->setPen(QPen(QColor(200, 80, 255), 1.5)); // purple
     ui->plotSpO2->yAxis->setRange(0.0, 1.2);
     ui->plotSpO2->xAxis->setRange(0, windowSeconds_);
 
     // Resp
     stylePlot(ui->plotResp);
-    ui->plotResp->graph(0)->setPen(QPen(Qt::lightGray));
+    ui->plotResp->graph(0)->setPen(QPen(Qt::lightGray, 1.5));
     ui->plotResp->yAxis->setRange(-1.2, 1.2);
     ui->plotResp->xAxis->setRange(0, windowSeconds_);
 }
 
-void MainWindow::pushSample(QVector<double> &x, QVector<double> &y, double t, double v)
+void MainWindow::pushSample(std::deque<double> &x, std::deque<double> &y, double t, double v)
 {
+    // Deque push_back is O(1), pop_front is O(1) (unlike QVector)
     x.push_back(t);
     y.push_back(v);
 
-    if (x.size() > maxPoints_)
+    // Remove oldest samples efficiently
+    while (x.size() > static_cast<size_t>(maxPoints_))
     {
-        int extra = x.size() - maxPoints_;
-        x.remove(0, extra);
-        y.remove(0, extra);
+        x.pop_front();
+        y.pop_front();
     }
 }
 
@@ -87,59 +104,59 @@ void MainWindow::onTick()
     const double dt = timer_.interval() / 1000.0;
     t_ += dt;
 
-    // --- Fake signals for now (replace with teammates' data later) ---
-    // ECG-ish: small sinus + repeating sharp peak (once per second)
-    double ecgBase = 0.08 * std::sin(2.0 * M_PI * 1.0 * t_);
-    double phase = std::fmod(t_, 1.0);
-    double spike = std::exp(-std::pow(phase - 0.12, 2) / 0.0007);
-    double ecg = ecgBase + 1.25 * spike;
+    // Generate sensor signals using precomputed parameters
+    const double ecgBase = waveParams_.ecgAmplitude * std::sin(2.0 * M_PI * waveParams_.ecgFreq * t_);
+    const double phase = std::fmod(t_, 1.0);
+    const double spike = std::exp(-std::pow(phase - 0.12, 2) / 0.0007);
+    const double ecg = ecgBase + waveParams_.ecgSpikeAmplitude * spike;
 
-    // Pleth (SpO2 waveform)
-    double spo2 = 0.55 + 0.4 * std::sin(2.0 * M_PI * 1.2 * t_);
+    const double spo2 = waveParams_.spO2Base + waveParams_.spO2Amplitude * std::sin(2.0 * M_PI * waveParams_.spO2Freq * t_);
+    const double resp = waveParams_.respAmplitude * std::sin(2.0 * M_PI * waveParams_.respFreq * t_);
 
-    // Resp
-    double resp = 0.6 * std::sin(2.0 * M_PI * 0.3 * t_);
-    // ---------------------------------------------------------------
-
+    // Add samples to circular buffers (O(1) with deque)
     pushSample(xECG_, yECG_, t_, ecg);
     pushSample(xSpO2_, ySpO2_, t_, spo2);
     pushSample(xResp_, yResp_, t_, resp);
 
+    // Cache visibility states
+    const bool ecgVisible = ui->plotECG->isVisible();
+    const bool spo2Visible = ui->plotSpO2->isVisible();
+    const bool respVisible = ui->plotResp->isVisible();
+
+    // Skip redraws if nothing visible
+    if (!ecgVisible && !spo2Visible && !respVisible)
+    {
+        return;
+    }
+
     const double left = t_ - windowSeconds_;
     const double right = t_;
 
-    // Batch replot: only update if at least one plot is visible
-    bool needsReplot = ui->plotECG->isVisible() || ui->plotSpO2->isVisible() || ui->plotResp->isVisible();
-
-    if (!needsReplot)
+    // Update visible plots efficiently (convert deque to QVector for plotting)
+    if (ecgVisible)
     {
-        return; // Skip all updates if nothing visible
-    }
-
-    // Update plots ONLY if visible (performance)
-    if (ui->plotECG->isVisible())
-    {
-        ui->plotECG->graph(0)->setData(xECG_, yECG_);
+        QVector<double> xVec(xECG_.begin(), xECG_.end());
+        QVector<double> yVec(yECG_.begin(), yECG_.end());
+        ui->plotECG->graph(0)->setData(xVec, yVec);
         ui->plotECG->xAxis->setRange(left, right);
         ui->plotECG->replot(QCustomPlot::rpQueuedReplot);
     }
-    if (ui->plotSpO2->isVisible())
+    if (spo2Visible)
     {
-        ui->plotSpO2->graph(0)->setData(xSpO2_, ySpO2_);
+        QVector<double> xVec(xSpO2_.begin(), xSpO2_.end());
+        QVector<double> yVec(ySpO2_.begin(), ySpO2_.end());
+        ui->plotSpO2->graph(0)->setData(xVec, yVec);
         ui->plotSpO2->xAxis->setRange(left, right);
         ui->plotSpO2->replot(QCustomPlot::rpQueuedReplot);
     }
-    if (ui->plotResp->isVisible())
+    if (respVisible)
     {
-        ui->plotResp->graph(0)->setData(xResp_, yResp_);
+        QVector<double> xVec(xResp_.begin(), xResp_.end());
+        QVector<double> yVec(yResp_.begin(), yResp_.end());
+        ui->plotResp->graph(0)->setData(xVec, yVec);
         ui->plotResp->xAxis->setRange(left, right);
         ui->plotResp->replot(QCustomPlot::rpQueuedReplot);
     }
-
-    // Update right-side numbers (use your label names if different)
-    // If your labels are named exactly like earlier:
-    // ui->lblHRValue->setText("130"); etc.
-    // (Only do this if you have those exact objectNames.)
 }
 
 void MainWindow::on_btnToggleECG_toggled(bool checked)
