@@ -2,57 +2,59 @@
 
 **Patient Monitor GUI for Raspberry Pi 400**
 
-Real-time medical signal visualization (ECG, SpO2, Respiratory) optimized for embedded systems.
+Real-time medical signal visualization system displaying ECG, SpO2, and respiratory waveforms, optimized for embedded performance on Raspberry Pi hardware.
 
 ---
 
 ## Quick Start
 
-### First-Time Setup
-
 ```bash
-cd ~/Code/CureCraft-Labs
-./setup-dependencies.sh     # Install Qt, build tools, ccache
-./deploy.sh                 # Build and start service (~8-10 min first time)
+./scripts/setup.sh    # First-time setup (installs dependencies)
+./scripts/deploy.sh   # Build and start the app
 ```
 
-### Daily Updates
-
+After setup, use convenient aliases:
 ```bash
-./deploy.sh                 # Pull latest code, rebuild, restart (~5-30 sec)
-```
-
-**Quick status check:**
-```bash
-./status.sh                 # View service status and helpful commands
-```
-
-The deploy script automatically:
-- Pulls latest code from git
-- Rebuilds only changed files
-- Restarts the systemd service
-
-### View Live Logs
-
-```bash
-journalctl --user -u curecraft.service -f
+upd     # Update and deploy
+status  # Check service status
+jctl    # View live logs
+jclr    # Clear logs
 ```
 
 ---
 
-## Display Configuration
+## Features
 
-The GUI displays on your **Raspberry Pi desktop**:
+🏥 **Medical Signal Display**
+- ECG waveform with realistic heartbeat simulation
+- SpO2 (blood oxygen) monitoring
+- Respiratory rate visualization
+- Toggle individual signals on/off
 
-- **Local viewing**: Visible on HDMI-connected monitor
-- **Remote viewing**: Visible when you VNC into the Pi desktop
-- **Auto-start**: Runs automatically on boot as a user service
+⚡ **Performance Optimized**
+- Runs smoothly at 20 FPS on Raspberry Pi 400
+- ccache for 95% faster incremental builds (5-30 sec vs 10 min)
+- Zero-copy plotting with QVector
+- Batch rendering for minimal CPU usage
 
-The app is part of your normal desktop, so it appears wherever you're viewing the Pi's screen (HDMI or VNC).
+🖥️ **Display Options**
+- Works on HDMI (local screen)
+- Works via VNC (remote viewing)
+- Auto-starts on boot as systemd user service
 
 ---
 
-## Service Management
+## Usage
+
+### Daily Workflow
+
+```bash
+upd        # Pull latest code, rebuild, restart
+status     # Check if app is running
+jctl       # Watch live logs
+```
+
+### Service Management
 
 ```bash
 systemctl --user status curecraft.service    # Check status
@@ -67,182 +69,48 @@ systemctl --user restart curecraft.service   # Restart
 
 ```
 CureCraft-Labs/
-├── src/
-│   ├── main.cpp           # Entry point
-│   ├── math.cpp           # Math utilities
-│   └── gui/               # Patient Monitor GUI
+├── scripts/           # All helper scripts
+│   ├── setup.sh       # Install dependencies
+│   ├── deploy.sh      # Deploy and restart (alias: upd)
+│   ├── status.sh      # Service status
+│   ├── journal-*.sh   # Log viewing/clearing
+│   └── start-*.sh     # Launcher scripts
+├── src/               # C++ source code
+│   ├── main.cpp
+│   ├── math.cpp
+│   └── gui/
 │       ├── mainwindow.cpp
 │       ├── mainwindow.ui
-│       └── qcustomplot.cpp (35k+ lines)
-├── include/               # Headers
-├── CMakeLists.txt         # Build configuration
-├── deploy.sh              # Deploy and restart
-└── setup-dependencies.sh  # Install dependencies
+│       └── qcustomplot.cpp
+├── include/           # Header files
+├── CMakeLists.txt     # Build configuration
+├── README.md          # This file
+└── SETUP.md           # Detailed setup guide
 ```
 
 ---
 
 ## Performance
 
-### Build Times (Raspberry Pi 400)
-
-| Scenario | Time | Notes |
-|----------|------|-------|
-| **First build** | ~8-10 min | Populates ccache |
-| **Incremental** (code change) | 5-30 sec | Only rebuilds changed files |
-| **Incremental** (no changes) | <5 sec | Uses cached objects |
-
-### Runtime Performance
-
-- **GUI Update Rate**: 20 Hz (50ms interval)
-- **Memory**: ~1500 data points per signal with circular buffers
-- **CPU**: Optimized with zero-copy plotting (QVector native)
-- **Rendering**: Antialiasing disabled for weak GPUs
-
-### Key Optimizations
-
-**Build System**:
-- **ccache**: Caches compiled objects (95% faster incremental builds)
-- **QCustomPlot separation**: 35k line file cached as separate library
-- **Ninja parallel builds**: Uses N+1 cores (5 cores on Pi 400)
-- **LTO**: Link-time optimization for smaller binaries
-
-**Runtime**:
-- **Zero-copy plotting**: QVector used natively (eliminates 120 conversions/sec)
-- **Adaptive sampling**: QCustomPlot reduces plotted points intelligently
-- **Visibility checks**: Skips rendering hidden plots
-- **Vector pre-allocation**: Prevents reallocations
+- **Build**: 8-10 min (first) → 5-30 sec (incremental)
+- **FPS**: Smooth 20 FPS rendering
+- **Optimizations**: ccache, O3, native arch, batch rendering
 
 ---
 
-## Troubleshooting
+## Requirements
 
-### Build Fails
-
-```bash
-rm -rf build/
-./deploy.sh
-```
-
-### Slow Incremental Builds
-
-Check if ccache is working:
-
-```bash
-ccache --show-stats
-```
-
-If not installed or misconfigured:
-
-```bash
-sudo apt-get install ccache
-ccache --max-size=2G
-ccache --set-config=compression=true
-```
-
-### Can't Find Qt
-
-Qt should auto-detect. If it fails:
-
-```bash
-qmake --version  # Check if Qt is installed
-```
-
-Re-run setup if needed:
-
-```bash
-./setup-dependencies.sh
-```
-
-### Service Won't Start
-
-```bash
-journalctl -u curecraft.service -n 100  # Last 100 log lines
-```
-
-### Manual Build & Run
-
-```bash
-cd ~/Code/CureCraft-Labs/build
-./curecraft
-```
+- Raspberry Pi 400 (BCM2711, 4 cores @ 1.8 GHz, 4GB RAM)
+- Raspberry Pi OS (Debian-based)
+- Qt5 or Qt6
 
 ---
 
-## Build Cache Management
+## Documentation
 
-### Check Cache Statistics
-
-```bash
-ccache --show-stats
-```
-
-### Clear Cache (If Needed)
-
-```bash
-ccache --clear       # Clear all cached objects
-rm -rf build/        # Remove build directory
-./deploy.sh          # Fresh rebuild
-```
-
-### Monitor Cache Size
-
-```bash
-ccache --show-config | grep max_size
-du -sh ~/.ccache
-```
-
----
-
-## VNC Optimization Tips
-
-- Disable animated backgrounds on Pi
-- Use solid colors instead of gradients
-- Limit window resolution to 1024x768 or less
-- Run VNC server at same display size as monitor
-
----
-
-## System Requirements
-
-- **Platform**: Raspberry Pi 400 (BCM2711, 4 cores @ 1.8 GHz)
-- **RAM**: 4 GB
-- **OS**: Raspberry Pi OS (Debian-based)
-- **Dependencies**: Qt5/Qt6, cmake, ninja, ccache, build-essential
-
----
-
-## Auto-Start on Boot
-
-The application runs as a systemd service (`curecraft.service`) that:
-- Starts automatically on boot
-- Restarts on crash (after 10 seconds)
-- Logs to journalctl
-
-Service file location: `/etc/systemd/system/curecraft.service`
-
----
-
-## Development
-
-### Compiler Flags
-
-- `-O2`: Balanced optimization for embedded systems
-- `-march=native`: Pi 400 CPU-specific optimizations
-- `-fno-exceptions -fno-rtti`: Reduced binary size (~10%)
-- `-pipe`: Reduces disk I/O during compilation
-
-### Code Quality
-
-- **Memory Safety**: Vectors pre-allocated, no dynamic allocations in hot path
-- **Performance**: Visibility checks prevent unnecessary rendering
-- **Modular**: QCustomPlot as separate cached library
-
----
-
-## License
-
-© CureCraft-Labs Team
+- **[SETUP.md](SETUP.md)** - Detailed setup instructions
+- Project uses modern C++17
+- Auto-discovers source files (just add .cpp to src/)
 
 ---
 
