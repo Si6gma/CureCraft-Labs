@@ -46,10 +46,11 @@ void MainWindow::setupPlots()
     auto stylePlot = [&](QCustomPlot *p)
     {
         // ====================================================================
-        // CRITICAL PERFORMANCE: Enable OpenGL rendering (uses GPU!)
-        // This is the BIGGEST performance improvement for Raspberry Pi
+        // PERFORMANCE: Enable OpenGL rendering if available (uses GPU!)
         // ====================================================================
-        p->setOpenGl(true);  // Use GPU acceleration
+#ifdef QCUSTOMPLOT_USE_OPENGL
+        p->setOpenGl(true);  // Use GPU acceleration when available
+#endif
         
         p->setBackground(blackBrush);
         p->xAxis->setBasePen(grayPen);

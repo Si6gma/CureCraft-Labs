@@ -35,6 +35,8 @@ sudo apt-get install -y \
     libqt6widgets6 \
     libqt6core6 \
     libqt6printsupport6 \
+    libqt6opengl6-dev \
+    libqt6openglwidgets6 \
     qt6-tools-dev \
     libxkbcommon-dev 2>/dev/null || true
 
