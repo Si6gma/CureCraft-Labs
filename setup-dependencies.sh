@@ -38,15 +38,17 @@ sudo apt-get install -y \
     qt6-tools-dev \
     libxkbcommon-dev 2>/dev/null || true
 
-# If qmake not available, fallback to Qt5
-if ! qmake --version 2>/dev/null | grep -q "Qt"; then
-    info "Qt6 not available, installing Qt5..."
+# Check if Qt6 is properly installed
+if ! pkg-config --exists Qt6Widgets 2>/dev/null; then
+    info "Qt6 not found, installing Qt5 as fallback..."
     sudo apt-get install -y \
         qt5-qmake \
         qtbase5-dev \
         libqt5widgets5 \
         libqt5printsupport5 \
-        libqt5printsupport5-dev
+        qtbase5-dev-tools
+else
+    info "Qt6 detected and ready!"
 fi
 
 info "Dependencies installed successfully!"
