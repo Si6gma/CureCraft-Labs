@@ -73,7 +73,7 @@ After=graphical-session.target
 [Service]
 Type=simple
 WorkingDirectory=${REPO_DIR}
-ExecStart=${REPO_DIR}/start-curecraft.sh
+ExecStart=${REPO_DIR}/scripts/start-curecraft.sh
 Restart=always
 RestartSec=10
 

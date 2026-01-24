@@ -51,6 +51,36 @@ else
     info "Qt6 detected and ready!"
 fi
 
+# ============================================================================
+# Create Command Aliases (Symlinks)
+# ============================================================================
+info "Setting up convenient command aliases..."
+
+# Create ~/bin if it doesn't exist
+mkdir -p "$HOME/bin"
+
+# Create symlinks for quick access
+SCRIPT_DIR="$HOME/Code/CureCraft-Labs/scripts"
+
+ln -sf "${SCRIPT_DIR}/journal-read.sh" "$HOME/bin/jctl"
+ln -sf "${SCRIPT_DIR}/journal-clear.sh" "$HOME/bin/jclr"
+ln -sf "${SCRIPT_DIR}/status.sh" "$HOME/bin/status"
+ln -sf "${SCRIPT_DIR}/deploy.sh" "$HOME/bin/upd"
+
+# Make sure ~/bin is in PATH
+if ! echo "$PATH" | grep -q "$HOME/bin"; then
+    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
+    info "Added ~/bin to PATH in .bashrc"
+fi
+
+info "Command aliases created:"
+info "  jctl   - View live logs"
+info "  jclr   - Clear journal logs"
+info "  status - Check service status"
+info "  upd    - Update and deploy"
+
 info "Dependencies installed successfully!"
 info "You can now run: ./deploy.sh"
 
+# Reload PATH for current session
+export PATH="$HOME/bin:$PATH"
