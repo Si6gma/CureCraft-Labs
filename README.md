@@ -22,6 +22,11 @@ cd ~/Code/CureCraft-Labs
 ./deploy.sh                 # Pull latest code, rebuild, restart (~5-30 sec)
 ```
 
+**Quick status check:**
+```bash
+./status.sh                 # View service status and helpful commands
+```
+
 The deploy script automatically:
 - Pulls latest code from git
 - Rebuilds only changed files
