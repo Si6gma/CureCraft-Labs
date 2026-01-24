@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CureCraft Patient Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="logo">CureCraft</h1>
+                <div class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Connecting...</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="control-panel">
+                    <button class="btn-toggle" id="btnToggleECG" data-signal="ecg">
+                        <span class="btn-icon">❤️</span>
+                        <span class="btn-label">ECG</span>
+                    </button>
+                    <button class="btn-toggle" id="btnToggleSpO2" data-signal="spo2">
+                        <span class="btn-icon">🫁</span>
+                        <span class="btn-label">SpO₂</span>
+                    </button>
+                    <button class="btn-toggle" id="btnToggleResp" data-signal="resp">
+                        <span class="btn-icon">💨</span>
+                        <span class="btn-label">Resp</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- ECG Chart -->
+            <section class="chart-container" id="ecgContainer">
+                <div class="chart-header">
+                    <h2 class="chart-title">Electrocardiogram (ECG)</h2>
+                    <div class="chart-badge ecg-badge">Heart Rate Monitor</div>
+                </div>
+                <canvas class="chart-canvas" id="ecgCanvas"></canvas>
+            </section>
+
+            <!-- SpO2 Chart -->
+            <section class="chart-container" id="spo2Container">
+                <div class="chart-header">
+                    <h2 class="chart-title">Blood Oxygen Saturation (SpO₂)</h2>
+                    <div class="chart-badge spo2-badge">Pulse Oximetry</div>
+                </div>
+                <canvas class="chart-canvas" id="spo2Canvas"></canvas>
+            </section>
+
+            <!-- Respiratory Chart -->
+            <section class="chart-container" id="respContainer">
+                <div class="chart-header">
+                    <h2 class="chart-title">Respiratory Rate</h2>
+                    <div class="chart-badge resp-badge">Breathing Monitor</div>
+                </div>
+                <canvas class="chart-canvas" id="respCanvas"></canvas>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-info">
+                <span>🔌 Connected Clients: <strong id="clientCount">0</strong></span>
+                <span>⏱️ Update Rate: <strong id="updateRate">20</strong> Hz</span>
+                <span>⏰ Runtime: <strong id="runtime">0.0</strong>s</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
