@@ -1,7 +1,7 @@
-#include "webserver.h"
+#include "server/webserver.h"
 #include "httplib.h"
-#include "auth.h"
-#include "sensor_manager.h"
+#include "server/auth.h"
+#include "hardware/sensor_manager.h"
 
 #include <iostream>
 #include <sstream>

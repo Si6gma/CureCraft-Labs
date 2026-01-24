@@ -1,4 +1,4 @@
-#include "signal_generator.h"
+#include "core/signal_generator.h"
 
 SignalGenerator::SignalGenerator()
 {
