@@ -35,6 +35,16 @@ journalctl -u curecraft.service -f
 
 ---
 
+## Display Configuration
+
+The GUI displays on your **Raspberry Pi's physical screen** (HDMI output).
+
+- The app runs as a systemd service that starts automatically on boot
+- GUI appears on display `:0` (your main screen)
+- If you need remote access, use VNC to view the Pi desktop
+
+---
+
 ## Service Management
 
 ```bash
