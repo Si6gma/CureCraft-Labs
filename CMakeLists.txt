@@ -3,6 +3,15 @@ cmake_minimum_required(VERSION 3.16)
 # Project name and language
 project(CureCraft LANGUAGES CXX)
 
+# ---- Compiler Cache Setup (CRITICAL for fast incremental builds) ----
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+    set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+    message(STATUS "Using ccache for faster incremental builds")
+else()
+    message(WARNING "ccache not found - incremental builds will be slow. Install with: sudo apt-get install ccache")
+endif()
+
 # Use modern C++
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -49,13 +58,28 @@ set(HEADERS
     include/qcustomplot.h
 )
 
-# ---- Create QCustomPlot as a static library ----
-add_library(qcustomplot STATIC src/gui/qcustomplot.cpp)
+# ---- Create QCustomPlot as a static library (cached separately) ----
+# IMPORTANT: This 35k+ line file takes ~8 minutes to compile on Pi 400
+# By making it a separate library, it only rebuilds when qcustomplot.cpp changes
+add_library(qcustomplot STATIC EXCLUDE_FROM_ALL src/gui/qcustomplot.cpp)
 target_include_directories(qcustomplot PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_compile_options(qcustomplot PRIVATE -fno-exceptions -fno-rtti)
+
+# Optimize qcustomplot compilation specifically
+target_compile_options(qcustomplot PRIVATE 
+    -O2                    # Moderate optimization
+    -fno-exceptions        # QCustomPlot doesn't use exceptions
+    -fno-rtti             # No runtime type info needed
+    -pipe                 # Use pipes instead of temp files
+)
+
 target_link_libraries(qcustomplot PUBLIC
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::PrintSupport
+)
+
+# Mark qcustomplot library outputs for caching
+set_target_properties(qcustomplot PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
 # ---- Create main CureCraft executable with integrated GUI ----
@@ -76,12 +100,13 @@ endif()
 
 # Compiler optimizations
 target_compile_options(curecraft PRIVATE
-    -O2
-    -march=native
-    -fno-exceptions
-    -fno-rtti
-    -ffunction-sections
-    -fdata-sections
+    -O2                    # Balanced optimization for embedded
+    -march=native          # Use Pi 400 CPU features
+    -fno-exceptions        # Reduce binary size
+    -fno-rtti             # No runtime type info
+    -ffunction-sections    # Enable dead code elimination
+    -fdata-sections       # Enable data section elimination
+    -pipe                 # Reduce disk I/O during compilation
 )
 
 # Linker optimizations
