@@ -9,7 +9,7 @@ set -e
 PORT=8080
 WEB_ROOT="./web"
 BUILD_DIR="./build"
-EXECUTABLE="$BUILD_DIR/curecraft-web"
+EXECUTABLE="$BUILD_DIR/curecraft"
 
 # Colors for output
 GREEN='\033[0;32m'

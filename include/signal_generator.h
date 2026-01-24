@@ -18,10 +18,15 @@ class SignalGenerator
 public:
     struct SensorData
     {
-        double ecg;       // ECG waveform value
-        double spo2;      // SpO2 (blood oxygen) waveform value
-        double resp;      // Respiratory waveform value
-        double timestamp; // Current time in seconds
+        double ecg;           // ECG waveform value
+        double spo2;          // SpO2 (blood oxygen) waveform value
+        double resp;          // Respiratory waveform value
+        double pleth;         // Plethysmograph waveform (SpO2 pulse)
+        double bp_systolic;   // Blood pressure systolic (mmHg)
+        double bp_diastolic;  // Blood pressure diastolic (mmHg)
+        double temp_cavity;   // Core/cavity temperature (°C)
+        double temp_skin;     // Skin/surface temperature (°C)
+        double timestamp;     // Current time in seconds
     };
 
     SignalGenerator();
