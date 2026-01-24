@@ -41,6 +41,8 @@ git submodule update --init --recursive
 
 # Build
 echo "=== Building (incremental, $BUILD_JOBS parallel jobs) ==="
+BUILD_START=$(date +%s)
+
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR" || die "Failed to enter build directory"
 
@@ -53,7 +55,12 @@ fi
 # Incremental build with parallel jobs
 ninja -j "$BUILD_JOBS" || die "Build failed"
 
+BUILD_END=$(date +%s)
+BUILD_TIME=$((BUILD_END - BUILD_START))
+
 [[ -x "$APP_PATH" ]] || die "Build failed: $APP_PATH not found"
+
+echo "✓ Build completed in ${BUILD_TIME}s"
 
 # Show ccache statistics if available
 if command -v ccache &> /dev/null; then

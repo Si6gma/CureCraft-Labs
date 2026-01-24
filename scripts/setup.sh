@@ -73,6 +73,8 @@ if ! echo "$PATH" | grep -q "$HOME/bin"; then
     info "Added ~/bin to PATH in .bashrc"
 fi
 
+source "$HOME/.bashrc"
+
 info "Command aliases created:"
 info "  jctl   - View live logs"
 info "  jclr   - Clear journal logs"
