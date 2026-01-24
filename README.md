@@ -42,14 +42,13 @@ journalctl --user -u curecraft.service -f
 
 ## Display Configuration
 
-**Smart Display Switching**: The app automatically chooses the best display:
+The GUI displays on your **Raspberry Pi desktop**:
 
-1. **VNC Priority**: If a VNC server is running (port 5900), the GUI displays via VNC
-2. **HDMI Fallback**: If no VNC connection, the GUI displays on your physical HDMI screen
+- **Local viewing**: Visible on HDMI-connected monitor
+- **Remote viewing**: Visible when you VNC into the Pi desktop
+- **Auto-start**: Runs automatically on boot as a user service
 
-This allows seamless remote access via VNC when connected, while still working on the local display when VNC isn't available.
-
-**To use VNC**: Just connect your VNC client - the app will automatically switch to VNC mode on next restart.
+The app is part of your normal desktop, so it appears wherever you're viewing the Pi's screen (HDMI or VNC).
 
 ---
 
