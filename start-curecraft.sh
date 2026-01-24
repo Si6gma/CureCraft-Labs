@@ -1,22 +1,11 @@
 #!/usr/bin/env bash
-# Smart launcher for CureCraft - tries VNC first, falls back to HDMI
+# Launcher for CureCraft - displays on native screen
+# Works both locally (HDMI) and remotely (when viewing desktop via VNC)
 
 APP_PATH="/home/admin/Code/CureCraft-Labs/build/curecraft"
-LOG_TAG="curecraft-launcher"
 
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $LOG_TAG: $*"
-}
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting CureCraft Patient Monitor..."
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Display will appear on local screen (visible via HDMI or VNC desktop viewer)"
 
-log "Starting CureCraft Patient Monitor..."
-
-# Check if VNC server is available on port 5900
-if netstat -tln | grep -q ':5900 '; then
-    log "VNC server detected on port 5900 - using VNC display"
-    export QT_QPA_PLATFORM=vnc
-    exec "$APP_PATH"
-else
-    log "No VNC server detected - using HDMI display"
-    # Let Qt auto-detect the display (will use X11 on HDMI)
-    exec "$APP_PATH"
-fi
+# Run on native display - works for both HDMI and VNC viewing
+exec "$APP_PATH"
