@@ -1,4 +1,4 @@
-#include "sensor_manager.h"
+#include "hardware/sensor_manager.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
