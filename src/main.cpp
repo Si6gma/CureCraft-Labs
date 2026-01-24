@@ -1,7 +1,7 @@
 #include <iostream>
 #include <QApplication>
 
-#include "math.h"
+#include "curecraft_math.h"
 #include "mainwindow.h"
 
 int main(int argc, char *argv[])

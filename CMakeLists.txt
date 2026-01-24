@@ -5,6 +5,12 @@ cmake_minimum_required(VERSION 3.16)
 project(CureCraft VERSION 1.0 LANGUAGES CXX)
 
 # ============================================================================
+# Build Options
+# ============================================================================
+option(BUILD_QT_GUI "Build Qt-based GUI" ON)
+option(BUILD_WEB_SERVER "Build HTML-based web server" ON)
+
+# ============================================================================
 # Compiler Cache Setup (CRITICAL for fast incremental builds)
 # ============================================================================
 find_program(CCACHE_FOUND ccache)
@@ -37,108 +43,115 @@ if(ipo_supported)
 endif()
 
 # ============================================================================
-# Qt Configuration
+# Qt Configuration (Optional)
 # ============================================================================
-set(CMAKE_AUTOUIC ON)  # Auto-process .ui files
-set(CMAKE_AUTOMOC ON)  # Auto-process Qt meta-objects
-set(CMAKE_AUTORCC ON)  # Auto-process Qt resources
+if(BUILD_QT_GUI)
+    set(CMAKE_AUTOUIC ON)  # Auto-process .ui files
+    set(CMAKE_AUTOMOC ON)  # Auto-process Qt meta-objects
+    set(CMAKE_AUTORCC ON)  # Auto-process Qt resources
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets PrintSupport)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets PrintSupport)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
 
-# Try to find OpenGL support (Qt6 uses OpenGLWidgets)
-if(${QT_VERSION_MAJOR} EQUAL 6)
-    find_package(Qt6 COMPONENTS OpenGLWidgets QUIET)
-    if(Qt6OpenGLWidgets_FOUND)
-        message(STATUS "✓ Qt6 OpenGL support found")
-        set(OPENGL_AVAILABLE TRUE)
+    # Try to find OpenGL support (Qt6 uses OpenGLWidgets)
+    if(${QT_VERSION_MAJOR} EQUAL 6)
+        find_package(Qt6 COMPONENTS OpenGLWidgets QUIET)
+        if(Qt6OpenGLWidgets_FOUND)
+            message(STATUS "✓ Qt6 OpenGL support found")
+            set(OPENGL_AVAILABLE TRUE)
+        else()
+            message(WARNING "⚠ Qt6 OpenGL not available - performance will be limited")
+            set(OPENGL_AVAILABLE FALSE)
+        endif()
     else()
-        message(WARNING "⚠ Qt6 OpenGL not available - performance will be limited")
-        set(OPENGL_AVAILABLE FALSE)
+        find_package(Qt5 COMPONENTS OpenGL QUIET)
+        if(Qt5OpenGL_FOUND)
+            set(OPENGL_AVAILABLE TRUE)
+        else()
+            set(OPENGL_AVAILABLE FALSE)
+        endif()
     endif()
-else()
-    find_package(Qt5 COMPONENTS OpenGL QUIET)
-    if(Qt5OpenGL_FOUND)
-        set(OPENGL_AVAILABLE TRUE)
-    else()
-        set(OPENGL_AVAILABLE FALSE)
-    endif()
+
+    message(STATUS "✓ Using Qt${QT_VERSION_MAJOR}")
 endif()
-
-message(STATUS "✓ Using Qt${QT_VERSION_MAJOR}")
 
 # ============================================================================
 # Source Files (Auto-discovered)
 # ============================================================================
-# Core application sources
-file(GLOB CORE_SOURCES 
-    "${PROJECT_SOURCE_DIR}/src/*.cpp"
-)
+if(BUILD_QT_GUI)
+    # Core application sources
+    file(GLOB CORE_SOURCES 
+        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+    )
 
-# GUI sources (excluding qcustomplot which is built separately)
-file(GLOB GUI_SOURCES 
-    "${PROJECT_SOURCE_DIR}/src/gui/mainwindow.cpp"
-)
+    # GUI sources (excluding qcustomplot which is built separately)
+    file(GLOB GUI_SOURCES 
+        "${PROJECT_SOURCE_DIR}/src/gui/mainwindow.cpp"
+    )
 
-# UI files
-file(GLOB UI_FILES
-    "${PROJECT_SOURCE_DIR}/src/gui/*.ui"
-)
+    # UI files
+    file(GLOB UI_FILES
+        "${PROJECT_SOURCE_DIR}/src/gui/*.ui"
+    )
 
-# Headers
-file(GLOB HEADERS
-    "${PROJECT_SOURCE_DIR}/include/*.h"
-)
+    # Headers
+    file(GLOB HEADERS
+        "${PROJECT_SOURCE_DIR}/include/*.h"
+    )
+endif()
 
 # ============================================================================
 # QCustomPlot Library (35k+ lines, cached separately)
 # ============================================================================
-# Build as static library to avoid recompiling on every change
-add_library(qcustomplot STATIC EXCLUDE_FROM_ALL 
-    "${PROJECT_SOURCE_DIR}/src/gui/qcustomplot.cpp"
-)
+if(BUILD_QT_GUI)
+    # Build as static library to avoid recompiling on every change
+    add_library(qcustomplot STATIC EXCLUDE_FROM_ALL 
+        "${PROJECT_SOURCE_DIR}/src/gui/qcustomplot.cpp"
+    )
 
-target_include_directories(qcustomplot PUBLIC 
-    "${PROJECT_SOURCE_DIR}/include"
-)
+    target_include_directories(qcustomplot PUBLIC 
+        "${PROJECT_SOURCE_DIR}/include"
+    )
 
-# Enable OpenGL support if available
-if(OPENGL_AVAILABLE)
-    target_compile_definitions(qcustomplot PUBLIC QCUSTOMPLOT_USE_OPENGL)
-    message(STATUS "✓ QCustomPlot OpenGL enabled")
-endif()
-
-# Optimized compilation flags for QCustomPlot
-target_compile_options(qcustomplot PRIVATE 
-    -O3                    # Maximum optimization (safe for this library)  
-    -fno-exceptions        # QCustomPlot doesn't use exceptions
-    -pipe                  # Use pipes instead of temp files
-    -ffast-math           # Fast math operations
-    # NOTE: RTTI required for dynamic_cast
-)
-
-target_link_libraries(qcustomplot PUBLIC
-    Qt${QT_VERSION_MAJOR}::Widgets
-    Qt${QT_VERSION_MAJOR}::PrintSupport
-)
-
-# Link OpenGL if available
-if(OPENGL_AVAILABLE)
-    if(${QT_VERSION_MAJOR} EQUAL 6)
-        target_link_libraries(qcustomplot PUBLIC Qt6::OpenGLWidgets)
-    else()
-        target_link_libraries(qcustomplot PUBLIC Qt5::OpenGL)
+    # Enable OpenGL support if available
+    if(OPENGL_AVAILABLE)
+        target_compile_definitions(qcustomplot PUBLIC QCUSTOMPLOT_USE_OPENGL)
+        message(STATUS "✓ QCustomPlot OpenGL enabled")
     endif()
+
+    # Optimized compilation flags for QCustomPlot
+    target_compile_options(qcustomplot PRIVATE 
+        -O3                    # Maximum optimization (safe for this library)  
+        -fno-exceptions        # QCustomPlot doesn't use exceptions
+        -pipe                  # Use pipes instead of temp files
+        -ffast-math           # Fast math operations
+        # NOTE: RTTI required for dynamic_cast
+    )
+
+    target_link_libraries(qcustomplot PUBLIC
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::PrintSupport
+    )
+
+    # Link OpenGL if available
+    if(OPENGL_AVAILABLE)
+        if(${QT_VERSION_MAJOR} EQUAL 6)
+            target_link_libraries(qcustomplot PUBLIC Qt6::OpenGLWidgets)
+        else()
+            target_link_libraries(qcustomplot PUBLIC Qt5::OpenGL)
+        endif()
+    endif()
+
+    # Cache compiled library
+    set_target_properties(qcustomplot PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    )
 endif()
 
-# Cache compiled library
-set_target_properties(qcustomplot PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-)
-
 # ============================================================================
-# Main Executable
+# Main Executable (Qt GUI)
 # ============================================================================
+if(BUILD_QT_GUI)
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(curecraft
         MANUAL_FINALIZATION
@@ -189,13 +202,71 @@ target_link_libraries(curecraft PRIVATE
     Qt${QT_VERSION_MAJOR}::PrintSupport
     Qt${QT_VERSION_MAJOR}::OpenGL
 )
+endif()
 
 # ============================================================================
 # Include Directories
 # ============================================================================
-target_include_directories(curecraft PRIVATE
-    "${PROJECT_SOURCE_DIR}/include"
-)
+if(BUILD_QT_GUI)
+    target_include_directories(curecraft PRIVATE
+        "${PROJECT_SOURCE_DIR}/include"
+    )
+endif()
+
+# ============================================================================
+# Web Server Build (HTML UI)
+# ============================================================================
+if(BUILD_WEB_SERVER)
+    # Find pthread for threading support
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+
+    # Source files for web server
+    set(WEB_SERVER_SOURCES
+        "${PROJECT_SOURCE_DIR}/src/server/main_web.cpp"
+        "${PROJECT_SOURCE_DIR}/src/server/webserver.cpp"
+        "${PROJECT_SOURCE_DIR}/src/signal_generator.cpp"
+    )
+
+    # Create web server executable
+    add_executable(curecraft-web ${WEB_SERVER_SOURCES})
+
+    # Compiler optimizations
+    target_compile_options(curecraft-web PRIVATE
+        -O3
+        -march=native
+        -ffunction-sections
+        -fdata-sections
+        -pipe
+        -ffast-math
+    )
+
+    # Linker optimizations (Linux-specific flags, skip on macOS)
+    if(UNIX AND NOT APPLE)
+        target_link_options(curecraft-web PRIVATE
+            -Wl,--gc-sections
+            -Wl,-s
+        )
+    endif()
+
+    # Include directories
+    target_include_directories(curecraft-web PRIVATE
+        "${PROJECT_SOURCE_DIR}/include"
+    )
+
+    # Link pthread
+    target_link_libraries(curecraft-web PRIVATE Threads::Threads)
+
+    # Install web assets
+    install(DIRECTORY "${PROJECT_SOURCE_DIR}/web/"
+            DESTINATION "share/curecraft/web"
+            FILES_MATCHING
+            PATTERN "*.html"
+            PATTERN "*.css"
+            PATTERN "*.js")
+
+    message(STATUS "✓ Web server build enabled")
+endif()
 
 # ============================================================================
 # Build Summary
@@ -204,7 +275,16 @@ message(STATUS "")
 message(STATUS "========================================")
 message(STATUS "CureCraft Build Configuration")
 message(STATUS "========================================")
-message(STATUS "Qt Version:     Qt${QT_VERSION_MAJOR}")
+if(BUILD_QT_GUI)
+    message(STATUS "Qt GUI:         Enabled (Qt${QT_VERSION_MAJOR})")
+else()
+    message(STATUS "Qt GUI:         Disabled")
+endif()
+if(BUILD_WEB_SERVER)
+    message(STATUS "Web Server:     Enabled")
+else()
+    message(STATUS "Web Server:     Disabled")
+endif()
 message(STATUS "Build Type:     ${CMAKE_BUILD_TYPE}")
 message(STATUS "Compiler:       ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "C++ Standard:   C++${CMAKE_CXX_STANDARD}")
