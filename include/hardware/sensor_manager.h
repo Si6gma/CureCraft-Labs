@@ -4,7 +4,7 @@
 #include <memory>
 #include <map>
 #include <string>
-#include "i2c_driver.h"
+#include "hardware/i2c_driver.h"
 
 /**
  * @brief Sensor types supported by the system

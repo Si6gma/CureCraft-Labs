@@ -48,11 +48,11 @@ find_package(Threads REQUIRED)
 # Source files
 set(SOURCES
     "${PROJECT_SOURCE_DIR}/src/main.cpp"
-    "${PROJECT_SOURCE_DIR}/src/webserver.cpp"
-    "${PROJECT_SOURCE_DIR}/src/signal_generator.cpp"
+    "${PROJECT_SOURCE_DIR}/src/server/webserver.cpp"
+    "${PROJECT_SOURCE_DIR}/src/server/auth.cpp"
+    "${PROJECT_SOURCE_DIR}/src/core/signal_generator.cpp"
     "${PROJECT_SOURCE_DIR}/src/hardware/i2c_driver.cpp"
     "${PROJECT_SOURCE_DIR}/src/hardware/sensor_manager.cpp"
-    "${PROJECT_SOURCE_DIR}/src/auth.cpp"
 )
 
 # Create main executable

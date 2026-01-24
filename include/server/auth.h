@@ -30,7 +30,7 @@ public:
 private:
     // Hardcoded credentials from spec
     static constexpr const char* VALID_USERNAME = "prog6";
-    static constexpr const char* VALID_PASSWORD = "WeLikeAChallenge2025!";
+    static constexpr const char* VALID_PASSWORD = "ese";
 };
 
 #endif // AUTH_H

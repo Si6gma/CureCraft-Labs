@@ -1,4 +1,4 @@
-#include "auth.h"
+#include "server/auth.h"
 #include <iostream>
 
 bool Authentication::validateLogin(const std::string& username, const std::string& password)

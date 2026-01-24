@@ -7,8 +7,8 @@
 #include <mutex>
 #include <vector>
 #include <memory>
-#include "signal_generator.h"
-#include "sensor_manager.h"
+#include "core/signal_generator.h"
+#include "hardware/sensor_manager.h"
 
 // Forward declarations
 class SensorManager;
