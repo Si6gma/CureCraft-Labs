@@ -35,7 +35,8 @@ sudo apt-get install -y \
     libqt6widgets6 \
     libqt6core6 \
     libqt6printsupport6 \
-    qt6-tools-dev 2>/dev/null || true
+    qt6-tools-dev \
+    libxkbcommon-dev 2>/dev/null || true
 
 # If qmake not available, fallback to Qt5
 if ! qmake --version 2>/dev/null | grep -q "Qt"; then
