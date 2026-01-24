@@ -18,7 +18,14 @@ sudo apt-get install -y \
     cmake \
     ninja-build \
     git \
-    pkg-config
+    pkg-config \
+    ccache
+
+# Configure ccache for optimal performance
+info "Configuring ccache..."
+ccache --max-size=2G  # 2GB cache is sufficient for this project
+ccache --set-config=compression=true
+ccache --set-config=compression_level=6
 
 # Qt libraries - try Qt6, fallback to Qt5
 info "Installing Qt libraries..."
