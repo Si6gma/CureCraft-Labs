@@ -3,8 +3,7 @@
 
 #include <QMainWindow>
 #include <QTimer>
-#include <deque>
-#include <array>
+#include <QVector>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -30,7 +29,7 @@ private slots:
 
 private:
     void setupPlots();
-    void pushSample(std::deque<double> &x, std::deque<double> &y, double t, double v);
+    void pushSample(QVector<double> &x, QVector<double> &y, double t, double v);
 
     // Precomputed waveform parameters for faster signal generation
     struct WaveformParams
@@ -48,13 +47,12 @@ private:
     Ui::MainWindow *ui;
     QTimer timer_;
 
-    // Circular buffers for time-series data (deque for O(1) pop_front)
-    std::deque<double> xECG_, yECG_;
-    std::deque<double> xSpO2_, ySpO2_;
-    std::deque<double> xResp_, yResp_;
+    // Time-series data using QVector (native to QCustomPlot - avoids conversions!)
+    QVector<double> xECG_, yECG_;
+    QVector<double> xSpO2_, ySpO2_;
+    QVector<double> xResp_, yResp_;
 
     double t_ = 0.0;
-    int updateCount_ = 0; // For frame skipping
 
     // Plot settings
     static constexpr int maxPoints_ = 1500;
@@ -62,3 +60,4 @@ private:
 };
 
 #endif // MAINWINDOW_H
+

@@ -24,6 +24,12 @@ need git
 need cmake
 need ninja
 
+# Enable ccache if available
+if command -v ccache &> /dev/null; then
+    export CCACHE_DIR="${HOME}/.ccache"
+    export PATH="/usr/lib/ccache:${PATH}"
+fi
+
 echo "=== CureCraft Deploy ==="
 
 # Update code
@@ -48,6 +54,12 @@ fi
 ninja -j "$BUILD_JOBS" || die "Build failed"
 
 [[ -x "$APP_PATH" ]] || die "Build failed: $APP_PATH not found"
+
+# Show ccache statistics if available
+if command -v ccache &> /dev/null; then
+    echo "=== Build Cache Statistics ==="
+    ccache --show-stats --verbose | head -n 10
+fi
 
 # Setup systemd service
 echo "=== Installing systemd service ==="
