@@ -61,38 +61,46 @@ if command -v ccache &> /dev/null; then
     ccache --show-stats --verbose | head -n 10
 fi
 
-# Setup systemd service
-echo "=== Installing systemd service ==="
+# Setup systemd USER service (runs in user session with display access)
+echo "=== Installing systemd user service ==="
+SERVICE_FILE_USER="${HOME}/.config/systemd/user/curecraft.service"
+mkdir -p "${HOME}/.config/systemd/user"
+
 SERVICE_CONTENT="[Unit]
 Description=CureCraft Patient Monitor
-After=network.target graphical.target
+After=graphical-session.target
 
 [Service]
 Type=simple
-User=admin
 WorkingDirectory=${REPO_DIR}
-Environment=\"DISPLAY=:0\"
-Environment=\"XAUTHORITY=/home/admin/.Xauthority\"
 ExecStart=${APP_PATH}
 Restart=always
 RestartSec=10
-StandardOutput=journal
-StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
-"
+WantedBy=default.target"
 
-echo "$SERVICE_CONTENT" | sudo tee "$SERVICE_FILE" > /dev/null
-sudo systemctl daemon-reload
+echo "$SERVICE_CONTENT" > "$SERVICE_FILE_USER"
 
-# Start service
-echo "=== Starting service ==="
-sudo systemctl restart "${SERVICE_NAME}"
+# Stop and disable system service if it exists
+if systemctl list-unit-files | grep -q "^curecraft.service"; then
+    sudo systemctl stop curecraft.service 2>/dev/null || true
+    sudo systemctl disable curecraft.service 2>/dev/null || true
+fi
+
+# Enable and start user service
+systemctl --user daemon-reload
+systemctl --user enable curecraft.service
+systemctl --user restart curecraft.service
+
+# Enable lingering so service starts on boot
+loginctl enable-linger $USER
+
 sleep 2
 
 echo "=== Status ==="
-sudo systemctl status "${SERVICE_NAME}"
+systemctl --user status curecraft.service
 
 echo "=== Done ==="
-echo "View logs: journalctl -u curecraft.service -f"
+echo "View logs: journalctl --user -u curecraft.service -f"
+
