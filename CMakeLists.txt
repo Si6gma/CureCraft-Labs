@@ -68,8 +68,8 @@ target_include_directories(qcustomplot PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_compile_options(qcustomplot PRIVATE 
     -O2                    # Moderate optimization
     -fno-exceptions        # QCustomPlot doesn't use exceptions
-    -fno-rtti             # No runtime type info needed
     -pipe                 # Use pipes instead of temp files
+    # NOTE: Cannot use -fno-rtti because QCustomPlot uses dynamic_cast
 )
 
 target_link_libraries(qcustomplot PUBLIC
@@ -103,10 +103,10 @@ target_compile_options(curecraft PRIVATE
     -O2                    # Balanced optimization for embedded
     -march=native          # Use Pi 400 CPU features
     -fno-exceptions        # Reduce binary size
-    -fno-rtti             # No runtime type info
     -ffunction-sections    # Enable dead code elimination
     -fdata-sections       # Enable data section elimination
     -pipe                 # Reduce disk I/O during compilation
+    # NOTE: RTTI kept enabled for QCustomPlot compatibility
 )
 
 # Linker optimizations
