@@ -54,9 +54,10 @@ private:
 
     double t_ = 0.0;
 
-    // Plot settings
-    static constexpr int maxPoints_ = 1500;
+    // Plot settings - OPTIMIZED FOR RASPBERRY PI 400
+    static constexpr int maxPoints_ = 600;      // Reduced from 1500 (faster rendering)
     static constexpr double windowSeconds_ = 6.0;
+    static constexpr int updateInterval_ = 100; // 100ms = 10Hz (was 50ms/20Hz)
 };
 
 #endif // MAINWINDOW_H
