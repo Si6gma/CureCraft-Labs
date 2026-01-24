@@ -82,6 +82,11 @@ target_include_directories(qcustomplot PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
 )
 
+# Enable OpenGL support in QCustomPlot (CRITICAL for performance!)
+target_compile_definitions(qcustomplot PUBLIC
+    QCUSTOMPLOT_USE_OPENGL
+)
+
 # Optimized compilation flags for QCustomPlot
 target_compile_options(qcustomplot PRIVATE 
     -O3                    # Maximum optimization (safe for this library)  
