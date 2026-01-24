@@ -65,14 +65,14 @@ fi
 echo "=== Installing systemd service ==="
 SERVICE_CONTENT="[Unit]
 Description=CureCraft Patient Monitor
-After=network.target
+After=network.target graphical.target
 
 [Service]
 Type=simple
-User=root
+User=admin
 WorkingDirectory=${REPO_DIR}
 Environment=\"DISPLAY=:0\"
-Environment=\"QT_QPA_PLATFORM=vnc\"
+Environment=\"XAUTHORITY=/home/admin/.Xauthority\"
 ExecStart=${APP_PATH}
 Restart=always
 RestartSec=10
