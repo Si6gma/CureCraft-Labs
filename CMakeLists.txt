@@ -1,75 +1,94 @@
+# ============================================================================
+# CureCraft Patient Monitor - CMake Build Configuration
+# ============================================================================
 cmake_minimum_required(VERSION 3.16)
+project(CureCraft VERSION 1.0 LANGUAGES CXX)
 
-# Project name and language
-project(CureCraft LANGUAGES CXX)
-
-# ---- Compiler Cache Setup (CRITICAL for fast incremental builds) ----
+# ============================================================================
+# Compiler Cache Setup (CRITICAL for fast incremental builds)
+# ============================================================================
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
     set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-    message(STATUS "Using ccache for faster incremental builds")
+    message(STATUS "✓ Using ccache for faster incremental builds")
 else()
-    message(WARNING "ccache not found - incremental builds will be slow. Install with: sudo apt-get install ccache")
+    message(WARNING "⚠ ccache not found - install with: sudo apt-get install ccache")
 endif()
 
-# Use modern C++
+# ============================================================================
+# C++ Standard and Optimization Settings
+# ============================================================================
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-# Optimization flags for Raspberry Pi
+# Default to Release build
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Enable LTO (Link Time Optimization) for smaller, faster binaries
+# Enable Link-Time Optimization (LTO) for smaller, faster binaries
 include(CheckIPOSupported)
 check_ipo_supported(RESULT ipo_supported)
 if(ipo_supported)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    message(STATUS "✓ Link-Time Optimization (LTO) enabled")
 endif()
 
-# ---- Qt Configuration for GUI ----
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+# ============================================================================
+# Qt Configuration
+# ============================================================================
+set(CMAKE_AUTOUIC ON)  # Auto-process .ui files
+set(CMAKE_AUTOMOC ON)  # Auto-process Qt meta-objects
+set(CMAKE_AUTORCC ON)  # Auto-process Qt resources
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets PrintSupport)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
+message(STATUS "✓ Using Qt${QT_VERSION_MAJOR}")
 
-# ---- Core Project Source files ----
-set(CORE_SOURCES
-    src/main.cpp
-    src/math.cpp
+# ============================================================================
+# Source Files (Auto-discovered)
+# ============================================================================
+# Core application sources
+file(GLOB CORE_SOURCES 
+    "${PROJECT_SOURCE_DIR}/src/*.cpp"
 )
 
-# ---- GUI Source files ----
-set(GUI_SOURCES
-    src/gui/mainwindow.cpp
-    src/gui/qcustomplot.cpp
-    src/gui/mainwindow.ui
+# GUI sources (excluding qcustomplot which is built separately)
+file(GLOB GUI_SOURCES 
+    "${PROJECT_SOURCE_DIR}/src/gui/mainwindow.cpp"
 )
 
-# ---- Header files ----
-set(HEADERS
-    include/math.h
-    include/mainwindow.h
-    include/qcustomplot.h
+# UI files
+file(GLOB UI_FILES
+    "${PROJECT_SOURCE_DIR}/src/gui/*.ui"
 )
 
-# ---- Create QCustomPlot as a static library (cached separately) ----
-# IMPORTANT: This 35k+ line file takes ~8 minutes to compile on Pi 400
-# By making it a separate library, it only rebuilds when qcustomplot.cpp changes
-add_library(qcustomplot STATIC EXCLUDE_FROM_ALL src/gui/qcustomplot.cpp)
-target_include_directories(qcustomplot PUBLIC ${PROJECT_SOURCE_DIR}/include)
+# Headers
+file(GLOB HEADERS
+    "${PROJECT_SOURCE_DIR}/include/*.h"
+)
 
-# Optimize qcustomplot compilation specifically
+# ============================================================================
+# QCustomPlot Library (35k+ lines, cached separately)
+# ============================================================================
+# Build as static library to avoid recompiling on every change
+add_library(qcustomplot STATIC EXCLUDE_FROM_ALL 
+    "${PROJECT_SOURCE_DIR}/src/gui/qcustomplot.cpp"
+)
+
+target_include_directories(qcustomplot PUBLIC 
+    "${PROJECT_SOURCE_DIR}/include"
+)
+
+# Optimized compilation flags for QCustomPlot
 target_compile_options(qcustomplot PRIVATE 
-    -O2                    # Moderate optimization
+    -O3                    # Maximum optimization (safe for this library)  
     -fno-exceptions        # QCustomPlot doesn't use exceptions
-    -pipe                 # Use pipes instead of temp files
-    # NOTE: Cannot use -fno-rtti because QCustomPlot uses dynamic_cast
+    -pipe                  # Use pipes instead of temp files
+    -ffast-math           # Fast math operations
+    # NOTE: RTTI required for dynamic_cast
 )
 
 target_link_libraries(qcustomplot PUBLIC
@@ -77,52 +96,83 @@ target_link_libraries(qcustomplot PUBLIC
     Qt${QT_VERSION_MAJOR}::PrintSupport
 )
 
-# Mark qcustomplot library outputs for caching
+# Cache compiled library
 set_target_properties(qcustomplot PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
-# ---- Create main CureCraft executable with integrated GUI ----
+# ============================================================================
+# Main Executable
+# ============================================================================
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(curecraft
         MANUAL_FINALIZATION
         ${CORE_SOURCES}
         ${GUI_SOURCES}
+        ${UI_FILES}
         ${HEADERS}
     )
 else()
     add_executable(curecraft
         ${CORE_SOURCES}
         ${GUI_SOURCES}
+        ${UI_FILES}
         ${HEADERS}
     )
 endif()
 
-# Compiler optimizations
+# ============================================================================
+# Compiler Optimizations for Main Executable
+# ============================================================================
 target_compile_options(curecraft PRIVATE
-    -O2                    # Balanced optimization for embedded
-    -march=native          # Use Pi 400 CPU features
+    -O3                    # Maximum optimization for application code
+    -march=native          # Use Raspberry Pi 400 CPU features
     -fno-exceptions        # Reduce binary size
     -ffunction-sections    # Enable dead code elimination
-    -fdata-sections       # Enable data section elimination
-    -pipe                 # Reduce disk I/O during compilation
+    -fdata-sections        # Enable dead data elimination
+    -pipe                  # Reduce disk I/O during compilation
+    -ffast-math           # Fast floating point (safe for this app)
     # NOTE: RTTI kept enabled for QCustomPlot compatibility
 )
 
-# Linker optimizations
+# ============================================================================
+# Linker Optimizations
+# ============================================================================
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_link_options(curecraft PRIVATE -Wl,--gc-sections -Wl,-s)
+    target_link_options(curecraft PRIVATE 
+        -Wl,--gc-sections   # Remove unused sections
+        -Wl,-s              # Strip symbols (smaller binary)
+    )
 endif()
 
-# Link libraries
+# ============================================================================
+# Link Libraries
+# ============================================================================
 target_link_libraries(curecraft PRIVATE 
     qcustomplot
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::PrintSupport
 )
 
-# ---- Include directories ----
-target_include_directories(curecraft
-    PRIVATE
-        ${PROJECT_SOURCE_DIR}/include
+# ============================================================================
+# Include Directories
+# ============================================================================
+target_include_directories(curecraft PRIVATE
+    "${PROJECT_SOURCE_DIR}/include"
 )
+
+# ============================================================================
+# Build Summary
+# ============================================================================
+message(STATUS "")
+message(STATUS "========================================")
+message(STATUS "CureCraft Build Configuration")
+message(STATUS "========================================")
+message(STATUS "Qt Version:     Qt${QT_VERSION_MAJOR}")
+message(STATUS "Build Type:     ${CMAKE_BUILD_TYPE}")
+message(STATUS "Compiler:       ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "C++ Standard:   C++${CMAKE_CXX_STANDARD}")
+message(STATUS "LTO Enabled:    ${ipo_supported}")
+message(STATUS "ccache:         ${CCACHE_FOUND}")
+message(STATUS "========================================")
+message(STATUS "")
