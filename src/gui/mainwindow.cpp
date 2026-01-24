@@ -18,8 +18,8 @@ MainWindow::MainWindow(QWidget *parent)
     xResp_.reserve(maxPoints_);
     yResp_.reserve(maxPoints_);
 
-    // 50 ms = 20 Hz GUI update. Optimized for Raspberry Pi.
-    timer_.setInterval(50);
+    // Optimized update rate for Raspberry Pi 400
+    timer_.setInterval(updateInterval_);
     connect(&timer_, &QTimer::timeout, this, &MainWindow::onTick);
     timer_.start();
 
@@ -45,6 +45,12 @@ void MainWindow::setupPlots()
     // Common styling helper lambda
     auto stylePlot = [&](QCustomPlot *p)
     {
+        // ====================================================================
+        // CRITICAL PERFORMANCE: Enable OpenGL rendering (uses GPU!)
+        // This is the BIGGEST performance improvement for Raspberry Pi
+        // ====================================================================
+        p->setOpenGl(true);  // Use GPU acceleration
+        
         p->setBackground(blackBrush);
         p->xAxis->setBasePen(grayPen);
         p->yAxis->setBasePen(grayPen);
@@ -56,13 +62,17 @@ void MainWindow::setupPlots()
         p->yAxis->setTickLabelColor(Qt::lightGray);
 
         p->legend->setVisible(false);
-        p->setNotAntialiasedElements(QCP::aeAll); // Disable antialiasing for weak GPUs
+        p->setNotAntialiasedElements(QCP::aeAll); // Disable antialiasing for speed
         p->setNoAntialiasingOnDrag(true);
         p->setInteraction(QCP::iRangeDrag, false);
         p->setInteraction(QCP::iRangeZoom, false);
 
+        // Performance optimizations
+        p->setPlottingHints(QCP::phFastPolylines);  // Fast line drawing
+        
         p->addGraph();
         p->graph(0)->setAdaptiveSampling(true);
+        p->graph(0)->setLineStyle(QCPGraph::lsLine);
     };
 
     // ECG
@@ -157,9 +167,10 @@ void MainWindow::onTick()
     }
 
     // Render all plots in ONE batch (much faster!)
-    if (ecgVisible) ui->plotECG->replot(QCustomPlot::rpQueuedReplot);
-    if (spo2Visible) ui->plotSpO2->replot(QCustomPlot::rpQueuedReplot);
-    if (respVisible) ui->plotResp->replot(QCustomPlot::rpQueuedReplot);
+    // With OpenGL enabled, use rpImmediateRefresh for smoother updates
+    if (ecgVisible) ui->plotECG->replot(QCustomPlot::rpImmediateRefresh);
+    if (spo2Visible) ui->plotSpO2->replot(QCustomPlot::rpImmediateRefresh);
+    if (respVisible) ui->plotResp->replot(QCustomPlot::rpImmediateRefresh);
 }
 
 void MainWindow::on_btnToggleECG_toggled(bool checked)
