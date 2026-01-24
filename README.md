@@ -30,7 +30,7 @@ The deploy script automatically:
 ### View Live Logs
 
 ```bash
-journalctl -u curecraft.service -f
+journalctl --user -u curecraft.service -f
 ```
 
 ---
@@ -48,10 +48,10 @@ The GUI displays on your **Raspberry Pi's physical screen** (HDMI output).
 ## Service Management
 
 ```bash
-sudo systemctl status curecraft.service    # Check status
-sudo systemctl stop curecraft.service      # Stop
-sudo systemctl start curecraft.service     # Start
-sudo systemctl restart curecraft.service   # Restart
+systemctl --user status curecraft.service    # Check status
+systemctl --user stop curecraft.service      # Stop
+systemctl --user start curecraft.service     # Start
+systemctl --user restart curecraft.service   # Restart
 ```
 
 ---
