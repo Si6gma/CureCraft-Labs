@@ -10,29 +10,29 @@
     --color-text-primary: #e0e0e0;
     --color-text-secondary: #a0a0a0;
     --color-text-muted: #606060;
-    
+
     /* Signal Colors */
     --color-ecg: #00ff88;
     --color-spo2: #c850ff;
     --color-resp: #c0c0c0;
-    
+
     /* Status Colors */
     --color-success: #00ff88;
     --color-warning: #ffd700;
     --color-error: #ff4444;
-    
+
     /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
-    
+
     /* Border Radius */
     --radius-sm: 0.375rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
@@ -124,8 +124,15 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .status-text {
@@ -288,20 +295,72 @@ body {
 }
 
 /* ============================================================================
-   Responsive Design
+   Numeric Vitals
    ============================================================================ */
 
+.vitals-numeric {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    background: var(--color-bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vital-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-normal);
+}
+
+.vital-item:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.vital-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+}
+
+.vital-value {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: 'Inter', monospace;
+    /* Monospace for stable numbers */
+    color: var(--color-text-primary);
+}
+
+.pleth-badge {
+    background: rgba(200, 80, 255, 0.15);
+    color: var(--color-spo2);
+    /* Reusing SpO2 color for Pleth */
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
 @media (max-width: 768px) {
     .header {
         flex-direction: column;
         gap: var(--spacing-md);
     }
-    
+
     .control-panel {
         width: 100%;
         justify-content: center;
     }
-    
+
     .footer-info {
         flex-direction: column;
         align-items: center;

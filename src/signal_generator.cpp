@@ -37,6 +37,28 @@ SignalGenerator::SensorData SignalGenerator::generate()
     data.resp = params_.respAmplitude * 
                 std::sin(2.0 * M_PI * params_.respFreq * time_);
 
+    // ========================================================================
+    // Plethysmograph Waveform Generation (SpO2 pulse waveform)
+    // Simulates the pulse oximetry waveform
+    // ========================================================================
+    data.pleth = 0.5 + 0.3 * std::sin(2.0 * M_PI * params_.spO2Freq * time_);
+
+    // ========================================================================
+    // Blood Pressure Generation
+    // Simulates realistic BP values with slow variation
+    // ========================================================================
+    const double bpVariation = 5.0 * std::sin(2.0 * M_PI * 0.02 * time_); // Slow drift
+    data.bp_systolic = 120.0 + bpVariation;
+    data.bp_diastolic = 80.0 + bpVariation * 0.5;
+
+    // ========================================================================
+    // Temperature Generation
+    // Simulates body temperature with slow drift for realism
+    // ========================================================================
+    const double tempDrift = 0.2 * std::sin(2.0 * M_PI * 0.01 * time_);
+    data.temp_cavity = 37.2 + tempDrift;      // Core temperature
+    data.temp_skin = 36.8 + tempDrift * 0.8;  // Skin temperature (follows core but dampened)
+
     return data;
 }
 
