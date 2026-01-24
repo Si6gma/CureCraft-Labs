@@ -45,6 +45,26 @@ set(CMAKE_AUTORCC ON)  # Auto-process Qt resources
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets PrintSupport)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport)
+
+# Try to find OpenGL support (Qt6 uses OpenGLWidgets)
+if(${QT_VERSION_MAJOR} EQUAL 6)
+    find_package(Qt6 COMPONENTS OpenGLWidgets QUIET)
+    if(Qt6OpenGLWidgets_FOUND)
+        message(STATUS "✓ Qt6 OpenGL support found")
+        set(OPENGL_AVAILABLE TRUE)
+    else()
+        message(WARNING "⚠ Qt6 OpenGL not available - performance will be limited")
+        set(OPENGL_AVAILABLE FALSE)
+    endif()
+else()
+    find_package(Qt5 COMPONENTS OpenGL QUIET)
+    if(Qt5OpenGL_FOUND)
+        set(OPENGL_AVAILABLE TRUE)
+    else()
+        set(OPENGL_AVAILABLE FALSE)
+    endif()
+endif()
+
 message(STATUS "✓ Using Qt${QT_VERSION_MAJOR}")
 
 # ============================================================================
@@ -82,10 +102,11 @@ target_include_directories(qcustomplot PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
 )
 
-# Enable OpenGL support in QCustomPlot (CRITICAL for performance!)
-target_compile_definitions(qcustomplot PUBLIC
-    QCUSTOMPLOT_USE_OPENGL
-)
+# Enable OpenGL support if available
+if(OPENGL_AVAILABLE)
+    target_compile_definitions(qcustomplot PUBLIC QCUSTOMPLOT_USE_OPENGL)
+    message(STATUS "✓ QCustomPlot OpenGL enabled")
+endif()
 
 # Optimized compilation flags for QCustomPlot
 target_compile_options(qcustomplot PRIVATE 
@@ -100,6 +121,15 @@ target_link_libraries(qcustomplot PUBLIC
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::PrintSupport
 )
+
+# Link OpenGL if available
+if(OPENGL_AVAILABLE)
+    if(${QT_VERSION_MAJOR} EQUAL 6)
+        target_link_libraries(qcustomplot PUBLIC Qt6::OpenGLWidgets)
+    else()
+        target_link_libraries(qcustomplot PUBLIC Qt5::OpenGL)
+    endif()
+endif()
 
 # Cache compiled library
 set_target_properties(qcustomplot PROPERTIES
@@ -157,6 +187,7 @@ target_link_libraries(curecraft PRIVATE
     qcustomplot
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::PrintSupport
+    Qt${QT_VERSION_MAJOR}::OpenGL
 )
 
 # ============================================================================
