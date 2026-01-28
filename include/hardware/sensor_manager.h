@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include "hardware/i2c_driver.h"
+#include "hardware/i2c_protocol.h"
 
 /**
  * @brief Sensor types supported by the system
@@ -25,16 +26,17 @@ struct SensorInfo
 {
     bool attached = false;
     float lastValue = 0.0f;
-    uint8_t i2cAddress = 0;
+    SensorId sensorId;     // Protocol sensor ID
     std::string name;
 };
 
 /**
- * @brief Manages sensor detection and data reading from SAMD21 modules
+ * @brief Manages sensor detection and data reading via SAMD21 hub
  * 
  * This class handles:
- * - Detection of connected sensors via I²C
- * - Reading sensor data from SAMD21 modules
+ * - Communication with SAMD21 SensorHub via I²C
+ * - Detection of connected sensors through hub
+ * - Reading sensor data through hub protocol
  * - Tracking sensor attachment status
  * - Providing sensor data to the application
  */
@@ -56,8 +58,8 @@ public:
     bool initialize();
 
     /**
-     * @brief Scan I²C bus for connected sensors
-     * @return Number of sensors found
+     * @brief Re-scan for sensors (for hot-plug detection)
+     * @return Number of sensors detected
      */
     int scanSensors();
 
@@ -69,7 +71,7 @@ public:
     bool isSensorAttached(SensorType type) const;
 
     /**
-     * @brief Read data from sensor
+     * @brief Read data from sensor via hub
      * @param type Sensor type
      * @param value Output value
      * @return true if successful
@@ -94,20 +96,9 @@ private:
     std::map<SensorType, SensorInfo> sensors_;
     bool mockMode_;
 
-    // I²C addresses for each sensor module
-    static constexpr uint8_t ADDR_ECG = 0x40;
-    static constexpr uint8_t ADDR_SPO2 = 0x41;
-    static constexpr uint8_t ADDR_TEMP1 = 0x42;
-    static constexpr uint8_t ADDR_TEMP2 = 0x43;
-    static constexpr uint8_t ADDR_NIBP = 0x44;
-
-    // I²C commands
-    static constexpr uint8_t CMD_PING = 0x01;
-    static constexpr uint8_t CMD_READ_DATA = 0x02;
-    static constexpr uint8_t CMD_TYPE = 0x03;
-
     void initializeSensorMap();
-    bool pingSensor(uint8_t address);
+    SensorId sensorTypeToId(SensorType type) const;
 };
 
 #endif // SENSOR_MANAGER_H
+
