@@ -2,7 +2,13 @@
 
 ## Overview
 
-This firmware runs on the SAMD21 SensorHub board and enables sensor detection for the CureCraft Patient Monitor.
+This firmware runs on the SAMD21 SensorHub board and enables automatic sensor detection for the CureCraft Patient Monitor.
+
+**Key Features:**
+- 🔄 **Automatic Sensor Polling**: Scans all sensor buses every 5 seconds
+- 🔌 **Hot-Plug Detection**: Automatically detects when sensors are connected/disconnected
+- 📡 **I2C Slave Interface**: Communicates with Raspberry Pi at address 0x08
+- 🔍 **Multi-Sensor Support**: ECG, SpO2, Temperature, and NIBP sensors
 
 ## Hardware Connections
 
@@ -12,13 +18,19 @@ This firmware runs on the SAMD21 SensorHub board and enables sensor detection fo
 - This is **I2C Bus 1** on the Pi
 
 ### Sensor Buses
-- **Bus A (W1)**: PA12 (SDA) / PA13 (SCL) → ECG (0x40), SpO2 (0x41)
-- **Bus B (W2)**: PA16 (SDA) / PA17 (SCL) → Temp (0x42), NIBP (0x43)
+- **Bus A (W1)**: PA12 (SDA) / PA13 (SCL) → ECG (0x40), SpO2 (0x41), or Temp (0x68)
+- **Bus B (W2)**: PA16 (SDA) / PA17 (SCL) → NIBP (0x43) or Temp (0x68)
 
 ## I2C Protocol
 
 ### Hub Address
 - `0x08` - SAMD21 SensorHub address on Pi's I2C bus
+
+### Automatic Sensor Scanning
+
+⚡ **The hub automatically scans sensor buses every 5 seconds** and maintains a cached status byte. This enables hot-plug detection without Pi intervention.
+
+When a sensor is connected or disconnected, the hub logs the event to Serial and updates the cached status within 5 seconds.
 
 ### Commands
 
@@ -31,23 +43,24 @@ Pi reads:    0x42 (magic response)
 ```
 
 #### SCAN (0x01)
-Scan for connected sensors.
+Get cached sensor status (does NOT trigger a new scan).
 
 ```
 Pi sends:    0x01
-Pi reads:    Status byte (bit field)
+Pi reads:    Status byte (most recent scan result)
 ```
 
 **Status Byte Format:**
-- Bit 0: ECG present (0x40)
-- Bit 1: SpO2 present (0x41)
-- Bit 2: Temperature present (0x42)
-- Bit 3: NIBP present (0x43)
+- Bit 0: ECG present (0x40 on W1)
+- Bit 1: SpO2 present (0x41 on W1)
+- Bit 2: Temperature present (0x68 on W1 or W2)
+- Bit 3: NIBP present (0x43 on W2)
 - Bits 4-7: Reserved (0)
 
 **Example:**
-- `0b00000101` (0x05) = ECG and Temp detected
-- `0b00001111` (0x0F) = All sensors detected
+- `0b00000101` (0x05) = ECG and Temperature detected
+- `0b00001111` (0x0F) = All 4 sensors detected
+- `0b00000100` (0x04) = Only Temperature detected
 
 ## Uploading Firmware
 
@@ -73,14 +86,24 @@ Sensor A: PA12/PA13 (W1)
 Sensor B: PA16/PA17 (W2)
 Ready!
 
---- Scanning Sensors ---
+========================================
+--- Auto-scanning Sensors ---
+Time: 0s
+========================================
 Bus A (W1):
-  ✗ ECG
-  ✗ SpO2
+  ✗ ECG (0x40)
+  ✗ SpO2 (0x41)
+  ✓ Temperature (0x68)
 Bus B (W2):
-  ✓ Temp (0x42)
-  ✗ NIBP
-Status byte: 0b00000100
+  ✗ NIBP (0x43)
+========================================
+Status byte: 0b100 (0x4)
+========================================
+
+[... automatic scans every 5 seconds ...]
+
+>>> SENSOR STATUS CHANGED <<<
+Previous: 0b100 -> New: 0b101
 ```
 
 ## Testing from Raspberry Pi
@@ -123,8 +146,35 @@ sudo i2cget -y 1 0x08
 - Ensure USB/Serial connection active
 - Some boards may need DTR/RTS toggle
 
+
+## Common Issues & Solutions
+
+### Bus B Scanning Hangs
+
+**Symptom**: Firmware hangs at "Bus B (W2):" with no output after.
+
+**Root Cause**: Incorrect SERCOM configuration and pin peripheral states cause I2C bus lockup.
+
+**Solution**: Ensure correct SERCOM assignments and pin states:
+```cpp
+// Correct SERCOM assignments
+TwoWire WireBackbone(&sercom3, W0_SDA, W0_SCL);  // SERCOM3 for backbone
+TwoWire WireSensorA(&sercom1, W1_SDA, W1_SCL);   // SERCOM1 for W1
+TwoWire WireSensorB(&sercom4, W2_SDA, W2_SCL);   // SERCOM4 for W2
+
+// In setup():
+portBackbone.setPinPeripheralStates();      // NOT AltStates
+portSensorsA.setPinPeripheralAltStates();   // AltStates for SERCOM1
+portSensorsB.setPinPeripheralStates();      // NOT AltStates
+
+// Interrupt handler
+void SERCOM3_Handler(void) {  // SERCOM3, not SERCOM5
+    WireBackbone.onService();
+}
+```
+
 ## Files
 
-- `sensor_hub_scanner.ino` - Main firmware (use this!)
+- `sensor_hub.ino` - Main firmware (use this!)
 - `TwiPinHelper.h` - Helper library for SERCOM pin configuration
 - `README.md` - This file
