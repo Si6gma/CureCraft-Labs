@@ -179,3 +179,7 @@ SensorDataStore::TimePoint SensorDataStore::lastUpdateTimestamp() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_timestamp_;
 }
+SensorDataStore& SensorDataStore::instance() {
+  static SensorDataStore inst;
+  return inst;
+}
