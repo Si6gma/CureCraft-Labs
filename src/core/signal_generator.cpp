@@ -1,5 +1,7 @@
 #include "core/signal_generator.h"
 
+#include "core/SensorDataStore.h"
+
 SignalGenerator::SignalGenerator()
 {
     // Initialize with default parameters
@@ -21,13 +23,13 @@ SignalGenerator::SensorData SignalGenerator::generate()
     const double phase = std::fmod(time_, 1.0);
     const double spike = std::exp(-std::pow(phase - 0.12, 2) / 0.0007);
     
-    data.ecg = ecgBase + params_.ecgSpikeAmplitude * spike;
+    data.ecg = SensorDataStore::instance().hasEcg() ? SensorDataStore::instance().getEcg() : ecgBase + params_.ecgSpikeAmplitude * spike;
 
     // ========================================================================
     // SpO2 Waveform Generation
     // Simulates blood oxygen saturation pulse
     // ========================================================================
-    data.spo2 = params_.spO2Base + 
+    data.spo2 = SensorDataStore::instance().hasSpo2() ? SensorDataStore::instance().getSpo2() : params_.spO2Base +
                 params_.spO2Amplitude * std::sin(2.0 * M_PI * params_.spO2Freq * time_);
 
     // ========================================================================
