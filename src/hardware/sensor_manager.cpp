@@ -88,14 +88,40 @@ int SensorManager::scanSensors()
         return 0;
     }
     
-    // Small delay for SAMD21 to scan
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // Give the hub time to perform the scan
+    // The hub takes some time to probe multiple I2C buses and print debug info. 
+    // Wait longer (500ms) to ensure scan is complete before reading.
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     
-    // Read status byte from hub
-    uint8_t statusByte = 0;
-    if (!i2c_->readByte(HUB_I2C_ADDRESS, statusByte))
+    // Read status byte from hub with validation
+    uint8_t statusByte = 0xFF;
+    bool success = false;
+    int retries = 3;
+
+    while (retries-- > 0)
     {
-        std::cerr << "[SensorMgr] Failed to read scan results" << std::endl;
+        if (i2c_->readByte(HUB_I2C_ADDRESS, statusByte))
+        {
+            // 0xFF usually means the bus is floating high (no response/ACK but read continued)
+            // Valid status should not be 0xFF (unless literally all bits including unused ones are set, which is impossible here)
+            if (statusByte != 0xFF)
+            {
+                success = true;
+                break;
+            }
+            std::cerr << "[SensorMgr] Warning: Received 0xFF status (bus idle?), retrying..." << std::endl;
+        }
+        else
+        {
+            std::cerr << "[SensorMgr] Failed to read byte, retrying..." << std::endl;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (!success || statusByte == 0xFF)
+    {
+        std::cerr << "[SensorMgr] Failed to read valid scan results (got 0x" 
+                  << std::hex << (int)statusByte << std::dec << ")" << std::endl;
         std::cerr.flush();
         return 0;
     }
