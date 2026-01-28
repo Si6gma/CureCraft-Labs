@@ -1,45 +1,46 @@
-// MQTTDriver.h
+// include/core/MQTTDriver.h
 #pragma once
 
 #include <string>
 #include <mutex>
-#include <chrono>
 #include <functional>
 #include <cmath>
+#include <cstdint>
 
-#include <mqtt/async_client.h>
+#include <mosquitto.h>
 
-#include "SensorDataStore.h"
+#include "core/SensorDataStore.h"
 
 class MQTTDriver {
 public:
-  using Clock = std::chrono::steady_clock;
-
-  // Keep non-SensorData vitals/conditions here (since SensorData doesn't include them)
   struct PatientData {
     // Heart
     float heartRate = NAN;
+    float systolicBP = NAN;
+    float diastolicBP = NAN;
     float strokeVolume = NAN;
     float contractility = NAN;
     float cardiacOutput = NAN;
     float meanArterialPressure = NAN; // heart/map
-    float preFactor = NAN;
-    float rhythm = NAN;
+    float preFactor = NAN;            // heart/prefactor
+    float rhythm = NAN;               // heart/rhytm (typo in topic)
 
-    // Lung (oxygenSat and respRate also mirrored into SensorDataStore)
+    // Lung
     float oxygenSaturation = NAN;
     float respiratoryRate = NAN;
     float airwayObstruction = NAN;
 
-    // Conditions (0/1 floats)
+    // Conditions (0/1)
     float septic = NAN;
     float anaphylaxis = NAN;
     float diabetesHypo = NAN;
-    float diabetesKeto = NAN;
+    float diabetesKeto = NAN;         // conditions/diabetsKeto (typo in topic)
     float cardiacArrest = NAN;
 
     // Has flags
     bool has_heartRate = false;
+    bool has_systolicBP = false;
+    bool has_diastolicBP = false;
     bool has_strokeVolume = false;
     bool has_contractility = false;
     bool has_cardiacOutput = false;
@@ -60,50 +61,65 @@ public:
 
   using UpdateCallback = std::function<void(const std::string& topic, float value)>;
 
-  MQTTDriver(std::string serverUri, std::string clientId, SensorDataStore& sensorStore);
+  explicit MQTTDriver(SensorDataStore& sensorStore);
   ~MQTTDriver();
 
+  // Broker config
+  void setBroker(std::string host, int port);
+  void setClientId(std::string clientId);
+
+  // Optional auth
   void setCredentials(std::string username, std::string password);
 
-  void connect();
+  // Optional keepalive (seconds), default 20
+  void setKeepAlive(int seconds);
+
+  // Connect/disconnect
+  bool connect();      // returns true if connected (or already connected)
   void disconnect();
   bool isConnected() const;
 
-  // Snapshot of non-SensorData values (heart/lung/conditions)
+  // Must be called periodically (e.g. every 10–50ms) to process network traffic.
+  // Uses mosquitto_loop() (single-threaded integration).
+  void loop(int timeout_ms = 10);
+
+  // Access latest non-SensorData vitals/conditions
   PatientData getPatientDataSnapshot() const;
 
   void setUpdateCallback(UpdateCallback cb);
 
 private:
-  class Callback final : public virtual mqtt::callback {
-  public:
-    explicit Callback(MQTTDriver& owner) : owner_(owner) {}
-    void connection_lost(const std::string& cause) override;
-    void message_arrived(mqtt::const_message_ptr msg) override;
-    void delivery_complete(mqtt::delivery_token_ptr) override {}
-  private:
-    MQTTDriver& owner_;
-  };
+  // libmosquitto callbacks (static thunks)
+  static void onConnect_(struct mosquitto* mosq, void* userdata, int rc);
+  static void onDisconnect_(struct mosquitto* mosq, void* userdata, int rc);
+  static void onMessage_(struct mosquitto* mosq, void* userdata, const struct mosquitto_message* msg);
 
-  void subscribeAll_();
-  void handleMessage_(const std::string& topic, const std::string& payload);
+  // Internal handlers
+  void handleConnect_(int rc);
+  void handleMessage_(const std::string& topic, const void* payload, int payloadlen);
 
-  static bool parseFloat_(const std::string& s, float& out);
-  static bool parseBoolish_(const std::string& s, float& out); // 0/1 floats
+  bool subscribeAll_();
+
+  // Parsing helpers
+  static bool parseFloat_(const char* bytes, int len, float& out);
+  static bool parseBoolish_(const char* bytes, int len, float& out); // -> 0/1
   static std::string trim_(std::string s);
   static std::string lower_(std::string s);
 
   void setField_(float& field, bool& hasFlag, float value);
 
-  std::string serverUri_;
-  std::string clientId_;
+  // Config
+  std::string host_ = "127.0.0.1";
+  int port_ = 1883;
+  std::string clientId_ = "curecraft";
   std::string username_;
   std::string password_;
   bool useAuth_ = false;
+  int keepAliveSec_ = 20;
 
-  mqtt::async_client client_;
-  mqtt::connect_options connOpts_;
-  Callback cb_;
+  // State
+  struct mosquitto* mosq_ = nullptr;
+  bool connected_ = false;
 
   SensorDataStore& sensorStore_;
 

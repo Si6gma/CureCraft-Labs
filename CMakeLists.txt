@@ -45,10 +45,34 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# ---- MQTT (Eclipse Paho MQTT C++ + C) ----
-# Requires packages on Raspberry Pi:
-#   sudo apt install -y libpaho-mqttpp-dev libpaho-mqtt-dev
-find_package(PahoMqttCpp REQUIRED)
+# ----------------------------------------------------------------------------
+# MQTT: libmosquitto (C library)
+# ----------------------------------------------------------------------------
+# If you built from source as suggested, it likely installed to:
+#   /usr/local/include/mosquitto.h
+#   /usr/local/lib/libmosquitto.so
+#
+# This finds mosquitto in both /usr and /usr/local.
+find_path(MOSQUITTO_INCLUDE_DIR
+        NAMES mosquitto.h
+        HINTS /usr/include /usr/local/include
+)
+
+find_library(MOSQUITTO_LIBRARY
+        NAMES mosquitto
+        HINTS /usr/lib /usr/local/lib
+)
+
+if(NOT MOSQUITTO_INCLUDE_DIR OR NOT MOSQUITTO_LIBRARY)
+    message(FATAL_ERROR
+            "libmosquitto not found.\n"
+            "Expected mosquitto.h and libmosquitto.\n"
+            "If you built from source, ensure /usr/local/include/mosquitto.h exists and run: sudo ldconfig"
+    )
+endif()
+
+message(STATUS "✓ Found mosquitto include: ${MOSQUITTO_INCLUDE_DIR}")
+message(STATUS "✓ Found mosquitto library: ${MOSQUITTO_LIBRARY}")
 
 # Source files
 set(SOURCES
@@ -59,7 +83,6 @@ set(SOURCES
         "${PROJECT_SOURCE_DIR}/src/hardware/i2c_driver.cpp"
         "${PROJECT_SOURCE_DIR}/src/hardware/sensor_manager.cpp"
 
-        # (You generally don't need headers in SOURCES, but it's not harmful)
         "${PROJECT_SOURCE_DIR}/include/core/MQTTDriver.h"
         "${PROJECT_SOURCE_DIR}/src/core/MQTTDriver.cpp"
         "${PROJECT_SOURCE_DIR}/include/core/SensorDataStore.h"
@@ -90,19 +113,13 @@ endif()
 # Include directories
 target_include_directories(curecraft PRIVATE
         "${PROJECT_SOURCE_DIR}/include"
+        "${MOSQUITTO_INCLUDE_DIR}"
 )
 
 # Link libraries
 target_link_libraries(curecraft PRIVATE
         Threads::Threads
-
-        # MQTT C++ wrapper
-        PahoMqttCpp::paho-mqttpp3
-
-        # MQTT C library:
-        # - Use paho-mqtt3a for tcp:// (non-SSL)
-        # - Use paho-mqtt3as for ssl:// (SSL)
-        PahoMqttCpp::paho-mqtt3a
+        "${MOSQUITTO_LIBRARY}"
 )
 
 # Install web assets
@@ -126,5 +143,7 @@ message(STATUS "Compiler:       ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "C++ Standard:   C++${CMAKE_CXX_STANDARD}")
 message(STATUS "LTO Enabled:    ${ipo_supported}")
 message(STATUS "ccache:         ${CCACHE_FOUND}")
+message(STATUS "Mosquitto inc:  ${MOSQUITTO_INCLUDE_DIR}")
+message(STATUS "Mosquitto lib:  ${MOSQUITTO_LIBRARY}")
 message(STATUS "========================================")
 message(STATUS "")
