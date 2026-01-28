@@ -53,14 +53,15 @@ Pi reads:    Status byte (most recent scan result)
 **Status Byte Format:**
 - Bit 0: ECG present (0x40 on W1)
 - Bit 1: SpO2 present (0x41 on W1)
-- Bit 2: Temperature present (0x68 on W1 or W2)
+- Bit 2: Core Temperature present (0x68 on W1)
 - Bit 3: NIBP present (0x43 on W2)
-- Bits 4-7: Reserved (0)
+- Bit 4: Skin Temperature present (0x68 on W2)
+- Bits 5-7: Reserved (0)
 
 **Example:**
-- `0b00000101` (0x05) = ECG and Temperature detected
-- `0b00001111` (0x0F) = All 4 sensors detected
-- `0b00000100` (0x04) = Only Temperature detected
+- `0b00010100` (0x14) = Skin Temp and NIBP detected
+- `0b00011111` (0x1F) = All 5 sensor types detected
+- `0b00010000` (0x10) = Only Skin Temperature detected
 
 ## Uploading Firmware
 

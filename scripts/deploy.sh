@@ -51,11 +51,9 @@ BUILD_START=$(date +%s)
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR" || die "Failed to enter build directory"
 
-# Only reconfigure if build.ninja is missing or CMakeLists.txt changed
-if [[ ! -f build.ninja ]] || [[ ../CMakeLists.txt -nt build.ninja ]]; then
+# Only reconfigure if CMakeLists.txt or CMakeCache changed
+if [[ ! -f CMakeCache.txt ]] || [[ ../CMakeLists.txt -nt CMakeCache.txt ]]; then
     echo "Configuring CMake..."
-    # Remove potentially clashing cache from other generators (e.g. Makefiles)
-    rm -f CMakeCache.txt
     cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE="-O2 -march=native" .. || die "CMake configuration failed"
 fi
 

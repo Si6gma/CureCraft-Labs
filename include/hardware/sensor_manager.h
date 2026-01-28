@@ -14,7 +14,8 @@ enum class SensorType
 {
     ECG,
     SpO2,
-    Temperature,
+    TempCore,
+    TempSkin,
     NIBP,
     Respiratory
 };
