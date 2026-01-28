@@ -1,5 +1,7 @@
 /Applications/CLion.app/Contents/bin/cmake/mac/aarch64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/Applications/CLion.app/Contents/bin/ninja/mac/aarch64/ninja -G Ninja -S /Users/yalukaiwo/Documents/ESE/CureCraft-Labs -B /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug
 -- ✓ Link-Time Optimization (LTO) enabled
+-- ✓ Found mosquitto include: /opt/homebrew/include
+-- ✓ Found mosquitto library: /opt/homebrew/lib/libmosquitto.dylib
 -- 
 -- ========================================
 -- CureCraft Build Configuration
@@ -10,8 +12,10 @@
 -- C++ Standard:   C++17
 -- LTO Enabled:    YES
 -- ccache:         CCACHE_FOUND-NOTFOUND
+-- Mosquitto inc:  /opt/homebrew/include
+-- Mosquitto lib:  /opt/homebrew/lib/libmosquitto.dylib
 -- ========================================
 -- 
--- Configuring done (0.2s)
+-- Configuring done (0.8s)
 -- Generating done (0.0s)
 -- Build files have been written to: /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug
