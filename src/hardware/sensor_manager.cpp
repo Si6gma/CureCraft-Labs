@@ -38,32 +38,57 @@ bool SensorManager::initialize()
 
     std::cout << "[SensorMgr] I²C bus opened successfully" << std::endl;
     
-    // Try to detect the hub (simple ping using echo firmware)
+    // Try to detect the hub at 0x08
+    std::cout << "[SensorMgr] Scanning for SensorHub..." << std::endl;
     bool hubDetected = i2c_->deviceExists(HUB_I2C_ADDRESS);
     
     if (hubDetected)
     {
         std::cout << "[SensorMgr] ✓ SensorHub detected at 0x" 
                   << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
-        
-        // Since hub is present, assume all sensors are available
-        // Signal generator will provide all data
-        sensors_[SensorType::ECG].attached = true;
-        sensors_[SensorType::SpO2].attached = true;
-        sensors_[SensorType::Temperature].attached = true;
-        sensors_[SensorType::NIBP].attached = true;
-        sensors_[SensorType::Respiratory].attached = true;
-        
-        std::cout << "[SensorMgr] All sensors marked as available (data from signal generator)" << std::endl;
     }
     else
     {
-        std::cerr << "[SensorMgr] ✗ SensorHub not detected" << std::endl;
+        std::cerr << "[SensorMgr] ✗ SensorHub not detected at 0x" 
+                  << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
         if (!mockMode_)
         {
             std::cerr << "[SensorMgr] Running without hardware sensors" << std::endl;
         }
+        return true;
     }
+
+    // Now probe for individual sensors
+    // These are the I2C addresses of sensors connected to the hub
+    std::cout << "[SensorMgr] Scanning for sensors..." << std::endl;
+    
+    const uint8_t ECG_ADDR = 0x40;
+    const uint8_t SPO2_ADDR = 0x41;
+    const uint8_t TEMP_ADDR = 0x42;
+    const uint8_t NIBP_ADDR = 0x43;
+    
+    sensors_[SensorType::ECG].attached = i2c_->deviceExists(ECG_ADDR);
+    sensors_[SensorType::SpO2].attached = i2c_->deviceExists(SPO2_ADDR);
+    sensors_[SensorType::Temperature].attached = i2c_->deviceExists(TEMP_ADDR);
+    sensors_[SensorType::NIBP].attached = i2c_->deviceExists(NIBP_ADDR);
+    sensors_[SensorType::Respiratory].attached = false; // Derived signal
+    
+    // Count detected sensors
+    int count = 0;
+    for (const auto& pair : sensors_)
+    {
+        if (pair.second.attached)
+        {
+            std::cout << "[SensorMgr] ✓ " << pair.second.name << " detected" << std::endl;
+            count++;
+        }
+        else
+        {
+            std::cout << "[SensorMgr] ✗ " << pair.second.name << " not detected" << std::endl;
+        }
+    }
+    
+    std::cout << "[SensorMgr] Found " << count << " sensor(s)" << std::endl;
 
     return true;
 }

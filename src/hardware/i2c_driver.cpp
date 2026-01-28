@@ -216,28 +216,38 @@ bool I2CDriver::getSensorStatus(uint8_t* statusBuffer)
 
 bool I2CDriver::deviceExists(uint8_t address)
 {
+    if (!isOpen())
+    {
+        return false;
+    }
+
     if (mockMode_)
     {
-        // In mock mode, simulate hub present
-        return (address == HUB_I2C_ADDRESS);
+        // In mock mode, only the hub exists
+        bool exists = (address == HUB_I2C_ADDRESS);
+        std::cout << "[I2C] Mock: Device 0x" << std::hex << (int)address << std::dec 
+                  << (exists ? " EXISTS" : " not found") << std::endl;
+        return exists;
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
+    std::cout << "[I2C] Probing device at 0x" << std::hex << (int)address << std::dec << "..." << std::endl;
 
-    // Try to set I²C slave address
     if (ioctl(fd_, I2C_SLAVE, address) < 0)
     {
+        std::cerr << "[I2C] Failed to select device 0x" << std::hex << (int)address << std::dec << std::endl;
         return false;
     }
 
-    // Try to read one byte
-    uint8_t data;
-    if (read(fd_, &data, 1) != 1)
+    // Try to read a single byte
+    uint8_t byte;
+    if (read(fd_, &byte, 1) != 1)
     {
+        std::cout << "[I2C] Device 0x" << std::hex << (int)address << std::dec << " not responding" << std::endl;
         return false;
     }
 
+    std::cout << "[I2C] ✓ Device 0x" << std::hex << (int)address << std::dec << " detected" << std::endl;
     return true;
 #else
     return false;
