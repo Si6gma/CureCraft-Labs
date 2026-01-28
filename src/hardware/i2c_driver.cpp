@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
+#include <errno.h>
 #endif
 
 I2CDriver::I2CDriver(int bus, bool mockMode)
@@ -34,14 +35,14 @@ bool I2CDriver::open()
 #ifdef __linux__
     std::string device = "/dev/i2c-" + std::to_string(bus_);
     fd_ = ::open(device.c_str(), O_RDWR);
-    
+
     if (fd_ < 0)
     {
         std::cerr << "[I2C] Failed to open " << device << ": " << strerror(errno) << std::endl;
         std::cerr << "[I2C] Hint: Run 'sudo raspi-config' to enable I²C" << std::endl;
         return false;
     }
-    
+
     std::cout << "[I2C] Opened " << device << " successfully" << std::endl;
     return true;
 #else
@@ -74,7 +75,8 @@ bool I2CDriver::pingHub()
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
+    if (fd_ < 0)
+        return false;
 
     // Send PING command
     uint8_t cmd = static_cast<uint8_t>(HubCommand::PING);
@@ -99,7 +101,7 @@ bool I2CDriver::pingHub()
 #endif
 }
 
-bool I2CDriver::readSensor(SensorId sensorId, float& value)
+bool I2CDriver::readSensor(SensorId sensorId, float &value)
 {
     if (mockMode_)
     {
@@ -108,12 +110,13 @@ bool I2CDriver::readSensor(SensorId sensorId, float& value)
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
+    if (fd_ < 0)
+        return false;
 
     // Send READ_SENSOR command with sensor ID
     uint8_t cmd = static_cast<uint8_t>(HubCommand::READ_SENSOR);
     uint8_t id = static_cast<uint8_t>(sensorId);
-    
+
     if (!writeCommand(HUB_I2C_ADDRESS, cmd, id))
     {
         return false;
@@ -147,22 +150,28 @@ uint8_t I2CDriver::scanSensors()
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return 0xFF;
-
-    // Send SCAN_SENSORS command
-    uint8_t cmd = static_cast<uint8_t>(HubCommand::SCAN_SENSORS);
-    if (!writeByte(HUB_I2C_ADDRESS, cmd))
+    if (fd_ < 0)
     {
+        std::cerr << "[I2C] File descriptor invalid" << std::endl;
         return 0xFF;
     }
 
-    // Delay for hub to scan all sensors
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    // Send SCAN_SENSORS command (0x03)
+    uint8_t cmd = static_cast<uint8_t>(HubCommand::SCAN_SENSORS);
+    if (!writeByte(HUB_I2C_ADDRESS, cmd))
+    {
+        std::cerr << "[I2C] Failed to send SCAN_SENSORS command" << std::endl;
+        return 0xFF;
+    }
 
-    // Read status byte
-    uint8_t status;
+    // Hub auto-scans every 5 seconds. Small delay before reading cached status.
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    // Read status byte from hub
+    uint8_t status = 0xFF;
     if (!readByte(HUB_I2C_ADDRESS, status))
     {
+        std::cerr << "[I2C] Failed to read SCAN_SENSORS response" << std::endl;
         return 0xFF;
     }
 
@@ -172,7 +181,7 @@ uint8_t I2CDriver::scanSensors()
 #endif
 }
 
-bool I2CDriver::getSensorStatus(uint8_t* statusBuffer)
+bool I2CDriver::getSensorStatus(uint8_t *statusBuffer)
 {
     if (mockMode_)
     {
@@ -186,7 +195,8 @@ bool I2CDriver::getSensorStatus(uint8_t* statusBuffer)
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
+    if (fd_ < 0)
+        return false;
 
     // Send GET_STATUS command
     uint8_t cmd = static_cast<uint8_t>(HubCommand::GET_STATUS);
@@ -225,7 +235,7 @@ bool I2CDriver::deviceExists(uint8_t address)
     {
         // In mock mode, only the hub exists
         bool exists = (address == HUB_I2C_ADDRESS);
-        std::cout << "[I2C] Mock: Device 0x" << std::hex << (int)address << std::dec 
+        std::cout << "[I2C] Mock: Device 0x" << std::hex << (int)address << std::dec
                   << (exists ? " EXISTS" : " not found") << std::endl;
         std::cout.flush(); // Force output immediately
         return exists;
@@ -263,23 +273,32 @@ bool I2CDriver::writeByte(uint8_t address, uint8_t data)
 {
     if (mockMode_)
     {
-        std::cout << "[I2C Mock] Write 0x" << std::hex << (int)data 
+        std::cout << "[I2C Mock] Write 0x" << std::hex << (int)data
                   << " to 0x" << (int)address << std::dec << std::endl;
         return true;
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
-
-    if (ioctl(fd_, I2C_SLAVE, address) < 0)
+    if (fd_ < 0)
     {
-        std::cerr << "[I2C] Failed to set slave address 0x" << std::hex << (int)address << std::dec << std::endl;
+        std::cerr << "[I2C] File descriptor invalid" << std::endl;
         return false;
     }
 
+    if (ioctl(fd_, I2C_SLAVE, address) < 0)
+    {
+        std::cerr << "[I2C] Failed to set slave address 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
+        return false;
+    }
+
+    // Small delay to ensure bus is ready
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+
     if (write(fd_, &data, 1) != 1)
     {
-        std::cerr << "[I2C] Failed to write byte" << std::endl;
+        std::cerr << "[I2C] Failed to write byte to 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
         return false;
     }
 
@@ -293,24 +312,33 @@ bool I2CDriver::writeCommand(uint8_t address, uint8_t command, uint8_t data)
 {
     if (mockMode_)
     {
-        std::cout << "[I2C Mock] Write command 0x" << std::hex << (int)command 
+        std::cout << "[I2C Mock] Write command 0x" << std::hex << (int)command
                   << " with data 0x" << (int)data << " to 0x" << (int)address << std::dec << std::endl;
         return true;
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
+    if (fd_ < 0)
+    {
+        std::cerr << "[I2C] File descriptor invalid" << std::endl;
+        return false;
+    }
 
     if (ioctl(fd_, I2C_SLAVE, address) < 0)
     {
-        std::cerr << "[I2C] Failed to set slave address 0x" << std::hex << (int)address << std::dec << std::endl;
+        std::cerr << "[I2C] Failed to set slave address 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
         return false;
     }
+
+    // Small delay to ensure bus is ready
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
 
     uint8_t buffer[2] = {command, data};
     if (write(fd_, buffer, 2) != 2)
     {
-        std::cerr << "[I2C] Failed to write command" << std::endl;
+        std::cerr << "[I2C] Failed to write command to 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
         return false;
     }
 
@@ -320,7 +348,7 @@ bool I2CDriver::writeCommand(uint8_t address, uint8_t command, uint8_t data)
 #endif
 }
 
-bool I2CDriver::readByte(uint8_t address, uint8_t& data)
+bool I2CDriver::readByte(uint8_t address, uint8_t &data)
 {
     if (mockMode_)
     {
@@ -329,15 +357,26 @@ bool I2CDriver::readByte(uint8_t address, uint8_t& data)
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
-
-    if (ioctl(fd_, I2C_SLAVE, address) < 0)
+    if (fd_ < 0)
     {
+        std::cerr << "[I2C] File descriptor invalid" << std::endl;
         return false;
     }
 
+    if (ioctl(fd_, I2C_SLAVE, address) < 0)
+    {
+        std::cerr << "[I2C] Failed to set slave address 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
+        return false;
+    }
+
+    // Small delay to ensure bus is ready
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+
     if (read(fd_, &data, 1) != 1)
     {
+        std::cerr << "[I2C] Failed to read byte from 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
         return false;
     }
 
@@ -347,7 +386,7 @@ bool I2CDriver::readByte(uint8_t address, uint8_t& data)
 #endif
 }
 
-bool I2CDriver::readBytes(uint8_t address, uint8_t* buffer, size_t length)
+bool I2CDriver::readBytes(uint8_t address, uint8_t *buffer, size_t length)
 {
     if (mockMode_)
     {
@@ -360,15 +399,26 @@ bool I2CDriver::readBytes(uint8_t address, uint8_t* buffer, size_t length)
     }
 
 #ifdef __linux__
-    if (fd_ < 0) return false;
-
-    if (ioctl(fd_, I2C_SLAVE, address) < 0)
+    if (fd_ < 0)
     {
+        std::cerr << "[I2C] File descriptor invalid" << std::endl;
         return false;
     }
 
+    if (ioctl(fd_, I2C_SLAVE, address) < 0)
+    {
+        std::cerr << "[I2C] Failed to set slave address 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
+        return false;
+    }
+
+    // Small delay to ensure bus is ready
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+
     if (read(fd_, buffer, length) != (ssize_t)length)
     {
+        std::cerr << "[I2C] Failed to read " << length << " bytes from 0x" << std::hex << (int)address
+                  << std::dec << ": " << strerror(errno) << std::endl;
         return false;
     }
 
@@ -390,30 +440,30 @@ float I2CDriver::generateMockValue(SensorId sensorId)
 
     switch (sensorId)
     {
-        case SensorId::ECG:
-            return 0.8f + 0.2f * std::sin(2.0 * M_PI * 1.0 * time);
-        case SensorId::SPO2:
-            return 97.0f + 2.0f * std::sin(2.0 * M_PI * 1.2 * time);
-        case SensorId::TEMP_CORE:
-            return 37.2f + 0.1f * std::sin(2.0 * M_PI * 0.01 * time);
-        case SensorId::TEMP_SKIN:
-            return 36.5f + 0.2f * std::sin(2.0 * M_PI * 0.01 * time);
-        case SensorId::NIBP:
-            return 120.0f; // Systolic
-        case SensorId::RESPIRATORY:
-            return 16.0f + 2.0f * std::sin(2.0 * M_PI * 0.25 * time);
-        default:
-            return 0.0f;
+    case SensorId::ECG:
+        return 0.8f + 0.2f * std::sin(2.0 * M_PI * 1.0 * time);
+    case SensorId::SPO2:
+        return 97.0f + 2.0f * std::sin(2.0 * M_PI * 1.2 * time);
+    case SensorId::TEMP_CORE:
+        return 37.2f + 0.1f * std::sin(2.0 * M_PI * 0.01 * time);
+    case SensorId::TEMP_SKIN:
+        return 36.5f + 0.2f * std::sin(2.0 * M_PI * 0.01 * time);
+    case SensorId::NIBP:
+        return 120.0f; // Systolic
+    case SensorId::RESPIRATORY:
+        return 16.0f + 2.0f * std::sin(2.0 * M_PI * 0.25 * time);
+    default:
+        return 0.0f;
     }
 }
 
 uint8_t I2CDriver::generateMockStatusByte()
 {
     // In mock mode, all sensors are present
-    return SensorStatusBits::ECG | 
-           SensorStatusBits::SPO2 | 
-           SensorStatusBits::TEMP_CORE | 
-           SensorStatusBits::NIBP | 
+    return SensorStatusBits::ECG |
+           SensorStatusBits::SPO2 |
+           SensorStatusBits::TEMP_CORE |
+           SensorStatusBits::NIBP |
            SensorStatusBits::TEMP_SKIN |
            SensorStatusBits::RESPIRATORY;
 }

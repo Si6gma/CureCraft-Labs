@@ -41,19 +41,19 @@ bool SensorManager::initialize()
     }
 
     std::cout << "[SensorMgr] I²C bus opened successfully" << std::endl;
-    
+
     // Try to detect the hub at 0x08
     std::cout << "[SensorMgr] Scanning for SensorHub..." << std::endl;
     std::cout.flush();
-    
+
     bool hubDetected = i2c_->deviceExists(HUB_I2C_ADDRESS);
-    
+
     if (hubDetected)
     {
-        std::cout << "[SensorMgr] ✓ SensorHub detected at 0x" 
+        std::cout << "[SensorMgr] ✓ SensorHub detected at 0x"
                   << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
         std::cout.flush();
-        
+
         // Scan for individual sensors using hub protocol
         int count = scanSensors();
         std::cout << "[SensorMgr] Found " << count << " sensor(s)" << std::endl;
@@ -61,7 +61,7 @@ bool SensorManager::initialize()
     }
     else
     {
-        std::cerr << "[SensorMgr] ✗ SensorHub not detected at 0x" 
+        std::cerr << "[SensorMgr] ✗ SensorHub not detected at 0x"
                   << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
         std::cerr.flush();
         if (!mockMode_)
@@ -78,114 +78,97 @@ int SensorManager::scanSensors()
 {
     std::cout << "[SensorMgr] Requesting sensor scan from hub..." << std::endl;
     std::cout.flush();
-    
-    // Send SCAN command (0x01) to hub
-    const uint8_t CMD_SCAN = 0x01;
-    if (!i2c_->writeByte(HUB_I2C_ADDRESS, CMD_SCAN))
+
+    // Use the proper protocol: send SCAN_SENSORS command and get status byte
+    // The hub automatically scans every 5s and caches the result
+    uint8_t statusByte = i2c_->scanSensors();
+
+    if (statusByte == 0xFF)
     {
-        std::cerr << "[SensorMgr] Failed to send SCAN command" << std::endl;
+        std::cerr << "[SensorMgr] Failed to read valid scan results (got 0xFF - I2C bus error)" << std::endl;
+        std::cerr << "[SensorMgr] Please check:" << std::endl;
+        std::cerr << "  1. Hub is connected at I2C address 0x08" << std::endl;
+        std::cerr << "  2. I2C bus is not busy or hung" << std::endl;
+        std::cerr << "  3. Hub firmware is responding" << std::endl;
         std::cerr.flush();
         return 0;
     }
-    
-    // Give the hub time to perform the scan
-    // The hub takes some time to probe multiple I2C buses and print debug info. 
-    // Wait longer (500ms) to ensure scan is complete before reading.
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    
-    // Read status byte from hub with validation
-    uint8_t statusByte = 0xFF;
-    bool success = false;
-    int retries = 3;
 
-    while (retries-- > 0)
-    {
-        if (i2c_->readByte(HUB_I2C_ADDRESS, statusByte))
-        {
-            // 0xFF usually means the bus is floating high (no response/ACK but read continued)
-            // Valid status should not be 0xFF (unless literally all bits including unused ones are set, which is impossible here)
-            if (statusByte != 0xFF)
-            {
-                success = true;
-                break;
-            }
-            std::cerr << "[SensorMgr] Warning: Received 0xFF status (bus idle?), retrying..." << std::endl;
-        }
-        else
-        {
-            std::cerr << "[SensorMgr] Failed to read byte, retrying..." << std::endl;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    if (!success || statusByte == 0xFF)
-    {
-        std::cerr << "[SensorMgr] Failed to read valid scan results (got 0x" 
-                  << std::hex << (int)statusByte << std::dec << ")" << std::endl;
-        std::cerr.flush();
-        return 0;
-    }
-    
     std::cout << "[SensorMgr] Status byte: 0b" << std::bitset<8>(statusByte) << std::endl;
     std::cout.flush();
-    
+
     // Parse status byte according to firmware bit assignments
     using namespace SensorStatusBits;
-    
+
     bool ecgDetected = (statusByte & ECG) != 0;
     bool spo2Detected = (statusByte & SPO2) != 0;
     bool coreTempDetected = (statusByte & TEMP_CORE) != 0;
     bool nibpDetected = (statusByte & NIBP) != 0;
     bool skinTempDetected = (statusByte & TEMP_SKIN) != 0;
-    
+
     // Update sensor attachment status
     sensors_[SensorType::ECG].attached = ecgDetected;
     sensors_[SensorType::SpO2].attached = spo2Detected;
     sensors_[SensorType::TempCore].attached = coreTempDetected;
     sensors_[SensorType::TempSkin].attached = skinTempDetected;
     sensors_[SensorType::NIBP].attached = nibpDetected;
-    sensors_[SensorType::Respiratory].attached = false;  // Derived signal, not a physical sensor
-    
+    sensors_[SensorType::Respiratory].attached = false; // Derived signal, not a physical sensor
+
     // Count and report detected sensors
     int count = 0;
-    
-    if (ecgDetected) {
+
+    if (ecgDetected)
+    {
         std::cout << "[SensorMgr] ✓ ECG detected (0x40)" << std::endl;
         count++;
-    } else {
+    }
+    else
+    {
         std::cout << "[SensorMgr] ✗ ECG not detected" << std::endl;
     }
-    
-    if (spo2Detected) {
+
+    if (spo2Detected)
+    {
         std::cout << "[SensorMgr] ✓ SpO2 detected (0x41)" << std::endl;
         count++;
-    } else {
+    }
+    else
+    {
         std::cout << "[SensorMgr] ✗ SpO2 not detected" << std::endl;
     }
-    
-    if (coreTempDetected) {
+
+    if (coreTempDetected)
+    {
         std::cout << "[SensorMgr] ✓ Core Temp detected (W1 0x68)" << std::endl;
         count++;
-    } else {
+    }
+    else
+    {
         std::cout << "[SensorMgr] ✗ Core Temp not detected" << std::endl;
     }
 
-    if (skinTempDetected) {
+    if (skinTempDetected)
+    {
         std::cout << "[SensorMgr] ✓ Skin Temp detected (W2 0x68)" << std::endl;
         count++;
-    } else {
+    }
+    else
+    {
         std::cout << "[SensorMgr] ✗ Skin Temp not detected" << std::endl;
     }
-    
-    if (nibpDetected) {
+
+    if (nibpDetected)
+    {
         std::cout << "[SensorMgr] ✓ NIBP detected (0x43)" << std::endl;
         count++;
-    } else {
+    }
+    else
+    {
         std::cout << "[SensorMgr] ✗ NIBP not detected" << std::endl;
     }
-    
+
     std::cout.flush();
-    
+
     return count;
 }
 
@@ -199,7 +182,7 @@ bool SensorManager::isSensorAttached(SensorType type) const
     return false;
 }
 
-bool SensorManager::readSensor(SensorType type, float& value)
+bool SensorManager::readSensor(SensorType type, float &value)
 {
     // Sensors are only for presence detection
     // All data comes from the signal generator
@@ -210,11 +193,11 @@ bool SensorManager::readSensor(SensorType type, float& value)
         return false;
     }
 
-    SensorInfo& info = it->second;
+    SensorInfo &info = it->second;
     return info.attached;
 }
 
-const SensorInfo& SensorManager::getSensorInfo(SensorType type) const
+const SensorInfo &SensorManager::getSensorInfo(SensorType type) const
 {
     static SensorInfo dummy;
     auto it = sensors_.find(type);
@@ -243,12 +226,19 @@ SensorId SensorManager::sensorTypeToId(SensorType type) const
 {
     switch (type)
     {
-        case SensorType::ECG: return SensorId::ECG;
-        case SensorType::SpO2: return SensorId::SPO2;
-        case SensorType::TempCore: return SensorId::TEMP_CORE;
-        case SensorType::TempSkin: return SensorId::TEMP_SKIN;
-        case SensorType::NIBP: return SensorId::NIBP;
-        case SensorType::Respiratory: return SensorId::RESPIRATORY;
-        default: return SensorId::ECG;
+    case SensorType::ECG:
+        return SensorId::ECG;
+    case SensorType::SpO2:
+        return SensorId::SPO2;
+    case SensorType::TempCore:
+        return SensorId::TEMP_CORE;
+    case SensorType::TempSkin:
+        return SensorId::TEMP_SKIN;
+    case SensorType::NIBP:
+        return SensorId::NIBP;
+    case SensorType::Respiratory:
+        return SensorId::RESPIRATORY;
+    default:
+        return SensorId::ECG;
     }
 }
