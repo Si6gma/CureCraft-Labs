@@ -68,15 +68,15 @@ void SensorDataStore::setBulk(const double& ecg,
                               const double& temp_skin,
                               const double& timestamp) {
   std::lock_guard<std::mutex> lk(mtx_);
-  if (ecg)         setField_(data_.ecg,         has_ecg_,         ts_ecg_,         *ecg);
-  if (spo2)        setField_(data_.spo2,        has_spo2_,        ts_spo2_,        *spo2);
-  if (resp)        setField_(data_.resp,        has_resp_,        ts_resp_,        *resp);
-  if (pleth)       setField_(data_.pleth,       has_pleth_,       ts_pleth_,       *pleth);
-  if (bp_systolic) setField_(data_.bp_systolic, has_bp_systolic_, ts_bp_systolic_, *bp_systolic);
-  if (bp_diastolic)setField_(data_.bp_diastolic,has_bp_diastolic_,ts_bp_diastolic_, *bp_diastolic);
-  if (temp_cavity) setField_(data_.temp_cavity, has_temp_cavity_, ts_temp_cavity_, *temp_cavity);
-  if (temp_skin)   setField_(data_.temp_skin,   has_temp_skin_,   ts_temp_skin_,   *temp_skin);
-  if (timestamp)   setField_(data_.timestamp,   has_timestamp_,   ts_timestamp_,   *timestamp);
+  if (ecg)         setField_(data_.ecg,         has_ecg_,         ts_ecg_,         ecg);
+  if (spo2)        setField_(data_.spo2,        has_spo2_,        ts_spo2_,        spo2);
+  if (resp)        setField_(data_.resp,        has_resp_,        ts_resp_,        resp);
+  if (pleth)       setField_(data_.pleth,       has_pleth_,       ts_pleth_,       pleth);
+  if (bp_systolic) setField_(data_.bp_systolic, has_bp_systolic_, ts_bp_systolic_, bp_systolic);
+  if (bp_diastolic)setField_(data_.bp_diastolic,has_bp_diastolic_,ts_bp_diastolic_, bp_diastolic);
+  if (temp_cavity) setField_(data_.temp_cavity, has_temp_cavity_, ts_temp_cavity_, temp_cavity);
+  if (temp_skin)   setField_(data_.temp_skin,   has_temp_skin_,   ts_temp_skin_,   temp_skin);
+  if (timestamp)   setField_(data_.timestamp,   has_timestamp_,   ts_timestamp_,   timestamp);
 }
 
 // ----- Getters -----
