@@ -48,6 +48,7 @@ const uint8_t CMD_SCAN = 0x01;
 volatile uint8_t lastCommand = 0;
 volatile uint8_t sensorStatus = 0;
 volatile bool needsScan = false;
+volatile bool isScanning = false;  // Prevent scan interruptions
 
 void setup() {
     delay(1500);
@@ -97,53 +98,43 @@ void loop() {
         lastBlink = millis();
     }
 
-    // Process scan requests
-    if (needsScan) {
+    // Process scan requests (only if not already scanning)
+    if (needsScan && !isScanning) {
         needsScan = false;
         scanSensors();
     }
 }
 
 void scanSensors() {
+    isScanning = true;  // Prevent interruptions
+    
     Serial.println("--- Scanning Sensors ---");
     
     sensorStatus = 0;
     
-    // Scan Bus A (W1)
+    // Scan Bus A (W1) for temp sensor
     Serial.println("Bus A (W1):");
-    if (probeSensor(WireSensorA, ECG_ADDR)) {
-        sensorStatus |= (1 << 0);
-        Serial.println("  ✓ ECG (0x40)");
+    if (probeSensor(WireSensorA, TEMP_ADDR)) {
+        sensorStatus |= (1 << 0);  // Bit 0 = Temp sensor on W1
+        Serial.println("  ✓ Core Temp (0x68)");
     } else {
-        Serial.println("  ✗ ECG");
+        Serial.println("  ✗ Core Temp");
     }
     
-    if (probeSensor(WireSensorA, SPO2_ADDR)) {
-        sensorStatus |= (1 << 1);
-        Serial.println("  ✓ SpO2 (0x41)");
-    } else {
-        Serial.println("  ✗ SpO2");
-    }
-    
-    // Scan Bus B (W2)
+    // Scan Bus B (W2) for temp sensor
     Serial.println("Bus B (W2):");
     if (probeSensor(WireSensorB, TEMP_ADDR)) {
-        sensorStatus |= (1 << 2);
-        Serial.println("  ✓ Temp (0x68)");
+        sensorStatus |= (1 << 1);  // Bit 1 = Temp sensor on W2
+        Serial.println("  ✓ Skin Temp (0x68)");
     } else {
-        Serial.println("  ✗ Temp");
-    }
-    
-    if (probeSensor(WireSensorB, NIBP_ADDR)) {
-        sensorStatus |= (1 << 3);
-        Serial.println("  ✓ NIBP (0x43)");
-    } else {
-        Serial.println("  ✗ NIBP");
+        Serial.println("  ✗ Skin Temp");
     }
     
     Serial.print("Status byte: 0b");
     Serial.println(sensorStatus, BIN);
     Serial.println();
+    
+    isScanning = false;  // Scan complete
 }
 
 bool probeSensor(TwoWire &wire, uint8_t addr) {

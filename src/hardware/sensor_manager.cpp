@@ -102,27 +102,39 @@ int SensorManager::scanSensors()
     std::cout << "[SensorMgr] Status byte: 0b" << std::bitset<8>(statusByte) << std::endl;
     std::cout.flush();
     
-    // Parse status byte (each bit = sensor present)
-    sensors_[SensorType::ECG].attached = (statusByte & (1 << 0)) != 0;
-    sensors_[SensorType::SpO2].attached = (statusByte & (1 << 1)) != 0;
-    sensors_[SensorType::Temperature].attached = (statusByte & (1 << 2)) != 0;
-    sensors_[SensorType::NIBP].attached = (statusByte & (1 << 3)) != 0;
-    sensors_[SensorType::Respiratory].attached = false; // Derived signal
+    // Parse status byte
+    // Bit 0: Core Temp sensor on W1 (0x68)
+    // Bit 1: Skin Temp sensor on W2 (0x68)
+    
+    bool coreTemp = (statusByte & (1 << 0)) != 0;
+    bool skinTemp = (statusByte & (1 << 1)) != 0;
+    
+    // Mark Temperature as attached if EITHER sensor is present
+    sensors_[SensorType::Temperature].attached = coreTemp || skinTemp;
+    
+    // Other sensors not currently used
+    sensors_[SensorType::ECG].attached = false;
+    sensors_[SensorType::SpO2].attached = false;
+    sensors_[SensorType::NIBP].attached = false;
+    sensors_[SensorType::Respiratory].attached = false;
     
     // Count and report detected sensors
     int count = 0;
-    for (const auto& pair : sensors_)
-    {
-        if (pair.second.attached)
-        {
-            std::cout << "[SensorMgr] ✓ " << pair.second.name << " detected" << std::endl;
-            count++;
-        }
-        else
-        {
-            std::cout << "[SensorMgr] ✗ " << pair.second.name << " not detected" << std::endl;
-        }
+    
+    if (coreTemp) {
+        std::cout << "[SensorMgr] ✓ Core Temperature detected (W1, 0x68)" << std::endl;
+        count++;
+    } else {
+        std::cout << "[SensorMgr] ✗ Core Temperature not detected" << std::endl;
     }
+    
+    if (skinTemp) {
+        std::cout << "[SensorMgr] ✓ Skin Temperature detected (W2, 0x68)" << std::endl;
+        count++;
+    } else {
+        std::cout << "[SensorMgr] ✗ Skin Temperature not detected" << std::endl;
+    }
+    
     std::cout.flush();
     
     return count;
