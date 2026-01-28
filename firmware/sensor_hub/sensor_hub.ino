@@ -32,7 +32,7 @@ TwoWire WireSensorB(&sercom4, W2_SDA, W2_SCL);   // Sensor bus B (SERCOM4)
 const uint8_t HUB_ADDRESS = 0x08;
 
 // Sensor addresses (on W1/W2 buses)
-const uint8_t ECG_ADDR  = 0x40;
+const uint8_t ECG_ADDR  = 0x2A;
 const uint8_t SPO2_ADDR = 0x41;
 const uint8_t TEMP_ADDR = 0x68;  // User's actual temp sensor address
 const uint8_t NIBP_ADDR = 0x43;
