@@ -6,7 +6,7 @@
 SensorManager::SensorManager(bool mockMode)
     : mockMode_(mockMode)
 {
-    // Pi 400 I2C bus 1 (GPIO 2/3 - default I2C pins)
+    // Pi 400 I2C bus 1 (GPIO 2/3 - where SAMD21 is connected)
     i2c_ = std::make_unique<I2CDriver>(1, mockMode);
     initializeSensorMap();
 }
@@ -38,66 +38,34 @@ bool SensorManager::initialize()
 
     std::cout << "[SensorMgr] I²C bus opened successfully" << std::endl;
     
-    // Ping the hub first
-    if (i2c_->pingHub())
+    // Try to detect the hub (simple ping using echo firmware)
+    bool hubDetected = i2c_->deviceExists(HUB_I2C_ADDRESS);
+    
+    if (hubDetected)
     {
         std::cout << "[SensorMgr] ✓ SensorHub detected at 0x" 
                   << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
+        
+        // Since hub is present, assume all sensors are available
+        // Signal generator will provide all data
+        sensors_[SensorType::ECG].attached = true;
+        sensors_[SensorType::SpO2].attached = true;
+        sensors_[SensorType::Temperature].attached = true;
+        sensors_[SensorType::NIBP].attached = true;
+        sensors_[SensorType::Respiratory].attached = true;
+        
+        std::cout << "[SensorMgr] All sensors marked as available (data from signal generator)" << std::endl;
     }
     else
     {
-        std::cerr << "[SensorMgr] ✗ SensorHub not responding" << std::endl;
+        std::cerr << "[SensorMgr] ✗ SensorHub not detected" << std::endl;
         if (!mockMode_)
         {
-            return false;
+            std::cerr << "[SensorMgr] Running without hardware sensors" << std::endl;
         }
     }
-    
-    // Scan for sensors
-    int count = scanSensors();
-    std::cout << "[SensorMgr] Found " << count << " sensors" << std::endl;
 
     return true;
-}
-
-int SensorManager::scanSensors()
-{
-    std::cout << "[SensorMgr] Scanning for sensors via hub..." << std::endl;
-
-    // Use hub's SCAN_SENSORS command
-    uint8_t statusByte = i2c_->scanSensors();
-    
-    if (statusByte == 0xFF)
-    {
-        std::cerr << "[SensorMgr] Failed to scan sensors" << std::endl;
-        return 0;
-    }
-
-    int count = 0;
-
-    // Update sensor status based on status byte
-    sensors_[SensorType::ECG].attached = (statusByte & SensorStatusBits::ECG) != 0;
-    sensors_[SensorType::SpO2].attached = (statusByte & SensorStatusBits::SPO2) != 0;
-    sensors_[SensorType::Temperature].attached = (statusByte & SensorStatusBits::TEMPERATURE) != 0;
-    sensors_[SensorType::NIBP].attached = (statusByte & SensorStatusBits::NIBP) != 0;
-    sensors_[SensorType::Respiratory].attached = (statusByte & SensorStatusBits::RESPIRATORY) != 0;
-
-    // Print results
-    for (const auto& pair : sensors_)
-    {
-        const SensorInfo& info = pair.second;
-        if (info.attached)
-        {
-            std::cout << "[SensorMgr] ✓ " << info.name << " detected" << std::endl;
-            count++;
-        }
-        else
-        {
-            std::cout << "[SensorMgr] ✗ " << info.name << " not found" << std::endl;
-        }
-    }
-
-    return count;
 }
 
 bool SensorManager::isSensorAttached(SensorType type) const
@@ -112,6 +80,9 @@ bool SensorManager::isSensorAttached(SensorType type) const
 
 bool SensorManager::readSensor(SensorType type, float& value)
 {
+    // Sensors are only for presence detection
+    // All data comes from the signal generator
+    // Just return true if sensor is attached
     auto it = sensors_.find(type);
     if (it == sensors_.end())
     {
@@ -119,20 +90,7 @@ bool SensorManager::readSensor(SensorType type, float& value)
     }
 
     SensorInfo& info = it->second;
-
-    if (!info.attached)
-    {
-        return false;
-    }
-
-    // Use hub's READ_SENSOR command
-    if (!i2c_->readSensor(info.sensorId, value))
-    {
-        return false;
-    }
-
-    info.lastValue = value;
-    return true;
+    return info.attached;
 }
 
 const SensorInfo& SensorManager::getSensorInfo(SensorType type) const
