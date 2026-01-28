@@ -1,0 +1,17 @@
+/Applications/CLion.app/Contents/bin/cmake/mac/aarch64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/Applications/CLion.app/Contents/bin/ninja/mac/aarch64/ninja -G Ninja -S /Users/yalukaiwo/Documents/ESE/CureCraft-Labs -B /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug
+-- ✓ Link-Time Optimization (LTO) enabled
+-- 
+-- ========================================
+-- CureCraft Build Configuration
+-- ========================================
+-- Platform:       Web UI (Qt Removed)
+-- Build Type:     Debug
+-- Compiler:       AppleClang
+-- C++ Standard:   C++17
+-- LTO Enabled:    YES
+-- ccache:         CCACHE_FOUND-NOTFOUND
+-- ========================================
+-- 
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug
