@@ -4,16 +4,17 @@
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
+#include <iostream>
 
 MQTTDriver::MQTTDriver(SensorDataStore& sensorStore)
 : sensorStore_(sensorStore) {
   mosquitto_lib_init();
 
   // Create client
+  clientId_ = "curecraft";
   mosq_ = mosquitto_new(clientId_.c_str(), true /*clean session*/, this);
   if (!mosq_) {
-    while(1);
-  }
+std::cerr << "MQTT connect failed\n";  }
 
   mosquitto_connect_callback_set(mosq_, &MQTTDriver::onConnect_);
   mosquitto_disconnect_callback_set(mosq_, &MQTTDriver::onDisconnect_);
@@ -48,7 +49,7 @@ void MQTTDriver::setClientId(std::string clientId) {
   }
 
   mosq_ = mosquitto_new(clientId_.c_str(), true, this);
-  if (!mosq_) {while(1);}
+  if (!mosq_) {std::cerr << "MQTT connect failed\n";}
 
   mosquitto_connect_callback_set(mosq_, &MQTTDriver::onConnect_);
   mosquitto_disconnect_callback_set(mosq_, &MQTTDriver::onDisconnect_);
@@ -335,8 +336,4 @@ bool MQTTDriver::parseBoolish_(const char* bytes, int len, float& out) {
   return false;
 }
 
-SensorDataStore& SensorDataStore::instance() {
-  static SensorDataStore inst;
-  return inst;
-}
 
