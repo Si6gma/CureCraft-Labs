@@ -244,12 +244,12 @@ void WebServer::dataStreamThread()
 void WebServer::sensorScanThread()
 {
     // This thread periodically rescans for sensors (hot-plug detection)
-    std::cout << "[WebServer] Sensor hot-plug detection enabled (scans every second)" << std::endl;
+    std::cout << "[WebServer] Sensor hot-plug detection enabled (scans every 3 seconds)" << std::endl;
     std::cout.flush();
     
     while (running_) {
-        // Wait 1 second
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        // Wait 3 seconds (gives SAMD21 time to complete scan)
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         
         if (!running_) break;
         
