@@ -34,7 +34,7 @@ const uint8_t HUB_ADDRESS = 0x08;
 // Sensor addresses (on W1/W2 buses)
 const uint8_t ECG_ADDR  = 0x40;
 const uint8_t SPO2_ADDR = 0x41;
-const uint8_t TEMP_ADDR = 0x42;
+const uint8_t TEMP_ADDR = 0x68;  // User's actual temp sensor address
 const uint8_t NIBP_ADDR = 0x43;
 
 // Protocol commands
@@ -129,7 +129,7 @@ void scanSensors() {
     Serial.println("Bus B (W2):");
     if (probeSensor(WireSensorB, TEMP_ADDR)) {
         sensorStatus |= (1 << 2);
-        Serial.println("  ✓ Temp (0x42)");
+        Serial.println("  ✓ Temp (0x68)");
     } else {
         Serial.println("  ✗ Temp");
     }
