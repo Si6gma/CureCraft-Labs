@@ -142,45 +142,36 @@ bool I2CDriver::readSensor(SensorId sensorId, float &value)
 
 uint8_t I2CDriver::scanSensors()
 {
-    if (mockMode_)
-    {
-        uint8_t status = generateMockStatusByte();
-        std::cout << "[I2C Mock] SCAN_SENSORS -> 0x" << std::hex << (int)status << std::dec << std::endl;
-        return status;
-    }
-
 #ifdef __linux__
-    if (fd_ < 0)
-    {
-        std::cerr << "[I2C] File descriptor invalid" << std::endl;
-        return 0xFF;
-    }
+    struct i2c_rdwr_ioctl_data packets;
+    struct i2c_msg messages[2];
 
-    // Send SCAN_SENSORS command (0x03)
     uint8_t cmd = static_cast<uint8_t>(HubCommand::SCAN_SENSORS);
-    if (!writeByte(HUB_I2C_ADDRESS, cmd))
-    {
-        std::cerr << "[I2C] Failed to send SCAN_SENSORS command" << std::endl;
-        return 0xFF;
-    }
+    uint8_t status = 0;
 
-    // Hub auto-scans every 5 seconds. Small delay before reading cached status.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    messages[0].addr = HUB_I2C_ADDRESS;
+    messages[0].flags = 0; // write
+    messages[0].len = 1;
+    messages[0].buf = &cmd;
 
-    // Read status byte from hub
-    uint8_t status = 0xFF;
-    if (!readByte(HUB_I2C_ADDRESS, status))
+    messages[1].addr = HUB_I2C_ADDRESS;
+    messages[1].flags = I2C_M_RD;
+    messages[1].len = 1;
+    messages[1].buf = &status;
+
+    packets.msgs = messages;
+    packets.nmsgs = 2;
+
+    if (ioctl(fd_, I2C_RDWR, &packets) < 0)
     {
-        std::cerr << "[I2C] Failed to read SCAN_SENSORS response" << std::endl;
+        std::cerr << "[I2C] Combined scan failed: "
+                  << strerror(errno) << std::endl;
         return 0xFF;
     }
 
     return status;
-#else
-    return 0xFF;
 #endif
 }
-
 bool I2CDriver::getSensorStatus(uint8_t *statusBuffer)
 {
     if (mockMode_)
