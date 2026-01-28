@@ -74,7 +74,7 @@ if command -v ccache &> /dev/null; then
 fi
 
 # Install and start the systemd service
-"${REPO_DIR}/scripts/setup-service.sh"
+# "${REPO_DIR}/scripts/setup-service.sh"
 
 echo "=== Done ==="
 echo "View logs: journalctl --user -u curecraft.service -f"
