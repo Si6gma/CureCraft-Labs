@@ -12,7 +12,7 @@ MQTTDriver::MQTTDriver(SensorDataStore& sensorStore)
   // Create client
   mosq_ = mosquitto_new(clientId_.c_str(), true /*clean session*/, this);
   if (!mosq_) {
-    throw std::runtime_error("mosquitto_new failed");
+    while(1);
   }
 
   mosquitto_connect_callback_set(mosq_, &MQTTDriver::onConnect_);
@@ -48,7 +48,7 @@ void MQTTDriver::setClientId(std::string clientId) {
   }
 
   mosq_ = mosquitto_new(clientId_.c_str(), true, this);
-  if (!mosq_) throw std::runtime_error("mosquitto_new failed");
+  if (!mosq_) {while(1);}
 
   mosquitto_connect_callback_set(mosq_, &MQTTDriver::onConnect_);
   mosquitto_disconnect_callback_set(mosq_, &MQTTDriver::onDisconnect_);
