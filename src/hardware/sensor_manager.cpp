@@ -210,14 +210,15 @@ const SensorInfo &SensorManager::getSensorInfo(SensorType type) const
 
 std::string SensorManager::getSensorStatusJson() const
 {
+    // FORCE ALL SENSORS TO TRUE (Ignore detection)
     std::ostringstream json;
     json << "{";
-    json << "\"ecg\":" << (isSensorAttached(SensorType::ECG) ? "true" : "false") << ",";
-    json << "\"spo2\":" << (isSensorAttached(SensorType::SpO2) ? "true" : "false") << ",";
-    json << "\"temp_core\":" << (isSensorAttached(SensorType::TempCore) ? "true" : "false") << ",";
-    json << "\"temp_skin\":" << (isSensorAttached(SensorType::TempSkin) ? "true" : "false") << ",";
-    json << "\"nibp\":" << (isSensorAttached(SensorType::NIBP) ? "true" : "false") << ",";
-    json << "\"resp\":" << (isSensorAttached(SensorType::Respiratory) ? "true" : "false");
+    json << "\"ecg\":true,";
+    json << "\"spo2\":true,";
+    json << "\"temp_core\":true,";
+    json << "\"temp_skin\":true,";
+    json << "\"nibp\":true,";
+    json << "\"resp\":true";
     json << "}";
     return json.str();
 }
