@@ -10,6 +10,11 @@
  * and SAMD21 SensorHub (I2C slave at address 0x08).
  * 
  * The SAMD21 hub multiplexes sensor access across multiple I2C buses.
+ * 
+ * AUTOMATIC SENSOR DETECTION:
+ * The hub automatically scans for connected sensors every 5 seconds and
+ * maintains a cached status byte. When Pi sends SCAN_SENSORS command,
+ * the hub returns the most recent cached status (no additional I2C scan).
  */
 
 // ============================================================================
@@ -28,7 +33,7 @@ enum class HubCommand : uint8_t
 {
     PING = 0x01,           ///< Health check - Hub responds with 0xAA
     READ_SENSOR = 0x02,    ///< Read sensor value - Request: [cmd, sensor_id], Response: [4-byte float]
-    SCAN_SENSORS = 0x03,   ///< Scan for attached sensors - Response: [status_byte]
+    SCAN_SENSORS = 0x03,   ///< Get cached sensor status - Response: [status_byte] (Hub auto-scans every 5s)
     GET_STATUS = 0x04      ///< Get detailed status - Response: [5-byte status array]
 };
 

@@ -102,37 +102,53 @@ int SensorManager::scanSensors()
     std::cout << "[SensorMgr] Status byte: 0b" << std::bitset<8>(statusByte) << std::endl;
     std::cout.flush();
     
-    // Parse status byte
-    // Bit 0: Core Temp sensor on W1 (0x68)
-    // Bit 1: Skin Temp sensor on W2 (0x68)
+    // Parse status byte according to firmware bit assignments:
+    // Bit 0: ECG sensor (0x40 on W1)
+    // Bit 1: SpO2 sensor (0x41 on W1)
+    // Bit 2: Temperature sensor (0x68 on W1 or W2)
+    // Bit 3: NIBP sensor (0x43 on W2)
     
-    bool coreTemp = (statusByte & (1 << 0)) != 0;
-    bool skinTemp = (statusByte & (1 << 1)) != 0;
+    bool ecgDetected = (statusByte & (1 << 0)) != 0;
+    bool spo2Detected = (statusByte & (1 << 1)) != 0;
+    bool tempDetected = (statusByte & (1 << 2)) != 0;
+    bool nibpDetected = (statusByte & (1 << 3)) != 0;
     
-    // Mark Temperature as attached if EITHER sensor is present
-    sensors_[SensorType::Temperature].attached = coreTemp || skinTemp;
-    
-    // Other sensors not currently used
-    sensors_[SensorType::ECG].attached = false;
-    sensors_[SensorType::SpO2].attached = false;
-    sensors_[SensorType::NIBP].attached = false;
-    sensors_[SensorType::Respiratory].attached = false;
+    // Update sensor attachment status
+    sensors_[SensorType::ECG].attached = ecgDetected;
+    sensors_[SensorType::SpO2].attached = spo2Detected;
+    sensors_[SensorType::Temperature].attached = tempDetected;
+    sensors_[SensorType::NIBP].attached = nibpDetected;
+    sensors_[SensorType::Respiratory].attached = false;  // Derived signal, not a physical sensor
     
     // Count and report detected sensors
     int count = 0;
     
-    if (coreTemp) {
-        std::cout << "[SensorMgr] ✓ Core Temperature detected (W1, 0x68)" << std::endl;
+    if (ecgDetected) {
+        std::cout << "[SensorMgr] ✓ ECG detected (0x40)" << std::endl;
         count++;
     } else {
-        std::cout << "[SensorMgr] ✗ Core Temperature not detected" << std::endl;
+        std::cout << "[SensorMgr] ✗ ECG not detected" << std::endl;
     }
     
-    if (skinTemp) {
-        std::cout << "[SensorMgr] ✓ Skin Temperature detected (W2, 0x68)" << std::endl;
+    if (spo2Detected) {
+        std::cout << "[SensorMgr] ✓ SpO2 detected (0x41)" << std::endl;
         count++;
     } else {
-        std::cout << "[SensorMgr] ✗ Skin Temperature not detected" << std::endl;
+        std::cout << "[SensorMgr] ✗ SpO2 not detected" << std::endl;
+    }
+    
+    if (tempDetected) {
+        std::cout << "[SensorMgr] ✓ Temperature detected (0x68)" << std::endl;
+        count++;
+    } else {
+        std::cout << "[SensorMgr] ✗ Temperature not detected" << std::endl;
+    }
+    
+    if (nibpDetected) {
+        std::cout << "[SensorMgr] ✓ NIBP detected (0x43)" << std::endl;
+        count++;
+    } else {
+        std::cout << "[SensorMgr] ✗ NIBP not detected" << std::endl;
     }
     
     std::cout.flush();
