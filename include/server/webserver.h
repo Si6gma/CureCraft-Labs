@@ -67,6 +67,7 @@ public:
 private:
     void serverThread();
     void dataStreamThread();
+    void sensorScanThread();
     std::string generateJsonData(const SignalGenerator::SensorData& data);
 
     int port_;
@@ -80,6 +81,7 @@ private:
     
     std::unique_ptr<std::thread> serverThreadHandle_;
     std::unique_ptr<std::thread> dataThreadHandle_;
+    std::unique_ptr<std::thread> sensorScanThreadHandle_;
     
     // Thread-safe client management
     mutable std::mutex clientsMutex_;

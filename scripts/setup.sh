@@ -44,10 +44,10 @@ mkdir -p "$HOME/bin"
 # Create symlinks for quick access
 SCRIPT_DIR="$HOME/Code/CureCraft-Labs/scripts"
 
-ln -sf "${SCRIPT_DIR}/journal-read.sh" "$HOME/bin/jctl"
-ln -sf "${SCRIPT_DIR}/journal-clear.sh" "$HOME/bin/jclr"
+ln -sf "${SCRIPT_DIR}/logs.sh" "$HOME/bin/logs"
+ln -sf "${SCRIPT_DIR}/logs-clear.sh" "$HOME/bin/logs-clear"
 ln -sf "${SCRIPT_DIR}/status.sh" "$HOME/bin/status"
-ln -sf "${SCRIPT_DIR}/deploy.sh" "$HOME/bin/upd"
+ln -sf "${SCRIPT_DIR}/deploy.sh" "$HOME/bin/deploy"
 
 # Make sure ~/bin is in PATH
 if ! echo "$PATH" | grep -q "$HOME/bin"; then
@@ -58,10 +58,10 @@ fi
 source "$HOME/.bashrc"
 
 info "Command aliases created:"
-info "  jctl   - View live logs"
-info "  jclr   - Clear journal logs"
-info "  status - Check service status"
-info "  upd    - Update and deploy"
+info "  logs        - View live service logs"
+info "  logs-clear  - Clear journal logs"
+info "  status      - Check service status"
+info "  deploy      - Update and deploy"
 
 info "Dependencies installed successfully!"
 info "You can now run: ./deploy.sh"
