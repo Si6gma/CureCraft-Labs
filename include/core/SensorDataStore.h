@@ -61,7 +61,7 @@ public:
 
   // ----- Snapshot of the underlying struct -----
   // Note: snapshot returns the struct as-is (fields may be stale if never set).
-  SensorData snapshot() const;
+  SignalGenerator::SensorData snapshot() const;
 
   // ----- Per-field last update timestamps -----
   std::optional<TimePoint> lastUpdateEcg() const;
@@ -78,7 +78,7 @@ private:
   void setField_(double& field, bool& hasFlag, std::optional<TimePoint>& ts, double v);
 
   mutable std::mutex mtx_;
-  SensorData data_{}; // from core/signal_generator.h
+  SignalGenerator::SensorData data_{}; // from core/signal_generator.h
 
   // availability flags
   bool has_ecg_ = false;
