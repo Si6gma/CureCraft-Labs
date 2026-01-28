@@ -13,7 +13,9 @@ public:
   using Clock = std::chrono::steady_clock;
   using TimePoint = Clock::time_point;
 
-  SensorDataStore();
+
+  static SensorDataStore& instance();
+
 
   // ----- Setters -----
   void setEcg(double v);
@@ -75,6 +77,8 @@ public:
   TimePoint lastUpdateTimestamp() const;
 
 private:
+    SensorDataStore();
+
   void setField_(double& field, bool& hasFlag, TimePoint& ts, double v);
 
   mutable std::mutex mtx_;

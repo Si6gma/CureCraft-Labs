@@ -334,3 +334,9 @@ bool MQTTDriver::parseBoolish_(const char* bytes, int len, float& out) {
 
   return false;
 }
+
+SensorDataStore& SensorDataStore::instance() {
+  static SensorDataStore inst;
+  return inst;
+}
+

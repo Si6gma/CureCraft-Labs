@@ -55,8 +55,9 @@ int main(int argc, char* argv[])
     WebServer server(port, webRoot, mockSensors);
     server.start();
 
-    SensorDataStore sensorStore;
-    MQTTDriver mqtt(sensorStore);
+    auto& store = SensorDataStore::instance();
+
+    MQTTDriver mqtt(store);
     mqtt.setKeepAlive(20);
 
 
