@@ -58,8 +58,8 @@ public:
     bool initialize();
 
     /**
-     * @brief Scan for connected sensors via hub
-     * @return Number of sensors found
+     * @brief Re-scan for sensors (for hot-plug detection)
+     * @return Number of sensors detected
      */
     int scanSensors();
 
