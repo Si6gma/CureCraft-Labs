@@ -6,7 +6,7 @@ set -euo pipefail
 
 REPO_DIR="/home/admin/Code/CureCraft-Labs"
 REMOTE="origin"
-BRANCH="main"
+
 BUILD_DIR="${REPO_DIR}/build"
 APP_NAME="curecraft"
 APP_PATH="${BUILD_DIR}/${APP_NAME}"
@@ -35,6 +35,11 @@ echo "=== CureCraft Deploy ==="
 # Update code
 echo "=== Fetching latest code ==="
 cd "$REPO_DIR" || die "Repo not found: $REPO_DIR"
+
+# Detect current branch
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "Detected branch: $BRANCH"
+
 git fetch "$REMOTE" "$BRANCH"
 git reset --hard "$REMOTE/$BRANCH"
 git submodule update --init --recursive
