@@ -85,8 +85,8 @@ set(SOURCES
 
         # "${PROJECT_SOURCE_DIR}/include/core/MQTTDriver.h"
         # "${PROJECT_SOURCE_DIR}/src/core/MQTTDriver.cpp"
-        "${PROJECT_SOURCE_DIR}/include/core/SensorDataStore.h"
-        "${PROJECT_SOURCE_DIR}/src/core/SensorDataStore.cpp"
+        # "${PROJECT_SOURCE_DIR}/include/core/SensorDataStore.h"
+        # "${PROJECT_SOURCE_DIR}/src/core/SensorDataStore.cpp"
 )
 
 # Create main executable
