@@ -45,14 +45,25 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+# ---- MQTT (Eclipse Paho MQTT C++ + C) ----
+# Requires packages on Raspberry Pi:
+#   sudo apt install -y libpaho-mqttpp-dev libpaho-mqtt-dev
+find_package(PahoMqttCpp REQUIRED)
+
 # Source files
 set(SOURCES
-    "${PROJECT_SOURCE_DIR}/src/main.cpp"
-    "${PROJECT_SOURCE_DIR}/src/server/webserver.cpp"
-    "${PROJECT_SOURCE_DIR}/src/server/auth.cpp"
-    "${PROJECT_SOURCE_DIR}/src/core/signal_generator.cpp"
-    "${PROJECT_SOURCE_DIR}/src/hardware/i2c_driver.cpp"
-    "${PROJECT_SOURCE_DIR}/src/hardware/sensor_manager.cpp"
+        "${PROJECT_SOURCE_DIR}/src/main.cpp"
+        "${PROJECT_SOURCE_DIR}/src/server/webserver.cpp"
+        "${PROJECT_SOURCE_DIR}/src/server/auth.cpp"
+        "${PROJECT_SOURCE_DIR}/src/core/signal_generator.cpp"
+        "${PROJECT_SOURCE_DIR}/src/hardware/i2c_driver.cpp"
+        "${PROJECT_SOURCE_DIR}/src/hardware/sensor_manager.cpp"
+
+        # (You generally don't need headers in SOURCES, but it's not harmful)
+        "${PROJECT_SOURCE_DIR}/include/core/MQTTDriver.h"
+        "${PROJECT_SOURCE_DIR}/src/core/MQTTDriver.cpp"
+        "${PROJECT_SOURCE_DIR}/include/core/SensorDataStore.h"
+        "${PROJECT_SOURCE_DIR}/src/core/SensorDataStore.cpp"
 )
 
 # Create main executable
@@ -60,29 +71,39 @@ add_executable(curecraft ${SOURCES})
 
 # Compiler optimizations
 target_compile_options(curecraft PRIVATE
-    -O3
-    -march=native
-    -ffunction-sections
-    -fdata-sections
-    -pipe
-    -ffast-math
+        -O3
+        -march=native
+        -ffunction-sections
+        -fdata-sections
+        -pipe
+        -ffast-math
 )
 
 # Linker optimizations (Linux-specific flags, skip on macOS)
 if(UNIX AND NOT APPLE)
     target_link_options(curecraft PRIVATE
-        -Wl,--gc-sections
-        -Wl,-s
+            -Wl,--gc-sections
+            -Wl,-s
     )
 endif()
 
 # Include directories
 target_include_directories(curecraft PRIVATE
-    "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/include"
 )
 
-# Link pthread
-target_link_libraries(curecraft PRIVATE Threads::Threads)
+# Link libraries
+target_link_libraries(curecraft PRIVATE
+        Threads::Threads
+
+        # MQTT C++ wrapper
+        PahoMqttCpp::paho-mqttpp3
+
+        # MQTT C library:
+        # - Use paho-mqtt3a for tcp:// (non-SSL)
+        # - Use paho-mqtt3as for ssl:// (SSL)
+        PahoMqttCpp::paho-mqtt3a
+)
 
 # Install web assets
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/web/"
