@@ -20,10 +20,10 @@ class I2CDriver
 public:
     /**
      * @brief Construct I²C driver
-     * @param bus I²C bus number (default: 20 for Pi 400 GPIO 8/9)
+     * @param bus I²C bus number (default: 1 for GPIO 2/3)
      * @param mockMode Enable mock mode for testing without hardware
      */
-    explicit I2CDriver(int bus = 20, bool mockMode = false);
+    explicit I2CDriver(int bus = 1, bool mockMode = false);
     
     ~I2CDriver();
 
