@@ -6,8 +6,8 @@
 SensorManager::SensorManager(bool mockMode)
     : mockMode_(mockMode)
 {
-    // Pi 400 uses I2C bus 20 (GPIO 8/9) for SensorHub
-    i2c_ = std::make_unique<I2CDriver>(20, mockMode);
+    // Pi 400 I2C bus 1 (GPIO 2/3 - default I2C pins)
+    i2c_ = std::make_unique<I2CDriver>(1, mockMode);
     initializeSensorMap();
 }
 
