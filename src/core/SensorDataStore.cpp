@@ -5,7 +5,7 @@ SensorDataStore::SensorDataStore() = default;
 
 void SensorDataStore::setField_(double& field,
                                 bool& hasFlag,
-                                std::optional<TimePoint>& ts,
+                                TimePoint& ts,
                                 double v) {
   field = v;
   hasFlag = true;
@@ -58,15 +58,15 @@ void SensorDataStore::setTimestamp(double v) {
   setField_(data_.timestamp, has_timestamp_, ts_timestamp_, v);
 }
 
-void SensorDataStore::setBulk(const std::optional<double>& ecg,
-                              const std::optional<double>& spo2,
-                              const std::optional<double>& resp,
-                              const std::optional<double>& pleth,
-                              const std::optional<double>& bp_systolic,
-                              const std::optional<double>& bp_diastolic,
-                              const std::optional<double>& temp_cavity,
-                              const std::optional<double>& temp_skin,
-                              const std::optional<double>& timestamp) {
+void SensorDataStore::setBulk(const double& ecg,
+                              const double& spo2,
+                              const double& resp,
+                              const double& pleth,
+                              const double& bp_systolic,
+                              const double& bp_diastolic,
+                              const double& temp_cavity,
+                              const double& temp_skin,
+                              const double& timestamp) {
   std::lock_guard<std::mutex> lk(mtx_);
   if (ecg)         setField_(data_.ecg,         has_ecg_,         ts_ecg_,         *ecg);
   if (spo2)        setField_(data_.spo2,        has_spo2_,        ts_spo2_,        *spo2);
@@ -80,49 +80,49 @@ void SensorDataStore::setBulk(const std::optional<double>& ecg,
 }
 
 // ----- Getters -----
-std::optional<double> SensorDataStore::getEcg() const {
+double SensorDataStore::getEcg() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_ecg_ ? std::optional<double>(data_.ecg) : std::nullopt;
+  return has_ecg_ ? data_.ecg : 0;
 }
 
-std::optional<double> SensorDataStore::getSpo2() const {
+double SensorDataStore::getSpo2() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_spo2_ ? std::optional<double>(data_.spo2) : std::nullopt;
+  return has_spo2_ ? double(data_.spo2) : 0;
 }
 
-std::optional<double> SensorDataStore::getResp() const {
+double SensorDataStore::getResp() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_resp_ ? std::optional<double>(data_.resp) : std::nullopt;
+  return has_resp_ ? double(data_.resp) : 0;
 }
 
-std::optional<double> SensorDataStore::getPleth() const {
+double SensorDataStore::getPleth() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_pleth_ ? std::optional<double>(data_.pleth) : std::nullopt;
+  return has_pleth_ ? double(data_.pleth) : 0;
 }
 
-std::optional<double> SensorDataStore::getBpSystolic() const {
+double SensorDataStore::getBpSystolic() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_bp_systolic_ ? std::optional<double>(data_.bp_systolic) : std::nullopt;
+  return has_bp_systolic_ ? double(data_.bp_systolic) : 0;
 }
 
-std::optional<double> SensorDataStore::getBpDiastolic() const {
+double SensorDataStore::getBpDiastolic() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_bp_diastolic_ ? std::optional<double>(data_.bp_diastolic) : std::nullopt;
+  return has_bp_diastolic_ ? double(data_.bp_diastolic) : 0;
 }
 
-std::optional<double> SensorDataStore::getTempCavity() const {
+double SensorDataStore::getTempCavity() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_temp_cavity_ ? std::optional<double>(data_.temp_cavity) : std::nullopt;
+  return has_temp_cavity_ ? double(data_.temp_cavity) : 0;
 }
 
-std::optional<double> SensorDataStore::getTempSkin() const {
+double SensorDataStore::getTempSkin() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_temp_skin_ ? std::optional<double>(data_.temp_skin) : std::nullopt;
+  return has_temp_skin_ ? double(data_.temp_skin) : 0;
 }
 
-std::optional<double> SensorDataStore::getTimestamp() const {
+double SensorDataStore::getTimestamp() const {
   std::lock_guard<std::mutex> lk(mtx_);
-  return has_timestamp_ ? std::optional<double>(data_.timestamp) : std::nullopt;
+  return has_timestamp_ ? double(data_.timestamp) : 0;
 }
 
 // ----- Has flags -----
@@ -137,45 +137,45 @@ bool SensorDataStore::hasTempSkin() const { std::lock_guard<std::mutex> lk(mtx_)
 bool SensorDataStore::hasTimestamp() const { std::lock_guard<std::mutex> lk(mtx_); return has_timestamp_; }
 
 // ----- Snapshot -----
-SensorData SensorDataStore::snapshot() const {
+SignalGenerator::SensorData SensorDataStore::snapshot() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return data_;
 }
 
 // ----- Last update times -----
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateEcg() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateEcg() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_ecg_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateSpo2() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateSpo2() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_spo2_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateResp() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateResp() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_resp_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdatePleth() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdatePleth() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_pleth_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateBpSystolic() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateBpSystolic() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_bp_systolic_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateBpDiastolic() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateBpDiastolic() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_bp_diastolic_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateTempCavity() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateTempCavity() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_temp_cavity_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateTempSkin() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateTempSkin() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_temp_skin_;
 }
-std::optional<SensorDataStore::TimePoint> SensorDataStore::lastUpdateTimestamp() const {
+SensorDataStore::TimePoint SensorDataStore::lastUpdateTimestamp() const {
   std::lock_guard<std::mutex> lk(mtx_);
   return ts_timestamp_;
 }

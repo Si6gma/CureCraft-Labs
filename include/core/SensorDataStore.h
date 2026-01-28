@@ -27,26 +27,26 @@ public:
   void setTimestamp(double v);
 
   // Optional convenience: set many at once (only overwrites provided fields)
-  void setBulk(const std::optional<double>& ecg,
-               const std::optional<double>& spo2,
-               const std::optional<double>& resp,
-               const std::optional<double>& pleth,
-               const std::optional<double>& bp_systolic,
-               const std::optional<double>& bp_diastolic,
-               const std::optional<double>& temp_cavity,
-               const std::optional<double>& temp_skin,
-               const std::optional<double>& timestamp);
+  void setBulk(const double& ecg,
+               const double& spo2,
+               const double& resp,
+               const double& pleth,
+               const double& bp_systolic,
+               const double& bp_diastolic,
+               const double& temp_cavity,
+               const double& temp_skin,
+               const double& timestamp);
 
   // ----- Getters (every value) -----
-  std::optional<double> getEcg() const;
-  std::optional<double> getSpo2() const;
-  std::optional<double> getResp() const;
-  std::optional<double> getPleth() const;
-  std::optional<double> getBpSystolic() const;
-  std::optional<double> getBpDiastolic() const;
-  std::optional<double> getTempCavity() const;
-  std::optional<double> getTempSkin() const;
-  std::optional<double> getTimestamp() const;
+  double getEcg() const;
+  double getSpo2() const;
+  double getResp() const;
+  double getPleth() const;
+  double getBpSystolic() const;
+  double getBpDiastolic() const;
+  double getTempCavity() const;
+  double getTempSkin() const;
+  double getTimestamp() const;
 
   // ----- "Has value" flags -----
   bool hasEcg() const;
@@ -64,18 +64,18 @@ public:
   SignalGenerator::SensorData snapshot() const;
 
   // ----- Per-field last update timestamps -----
-  std::optional<TimePoint> lastUpdateEcg() const;
-  std::optional<TimePoint> lastUpdateSpo2() const;
-  std::optional<TimePoint> lastUpdateResp() const;
-  std::optional<TimePoint> lastUpdatePleth() const;
-  std::optional<TimePoint> lastUpdateBpSystolic() const;
-  std::optional<TimePoint> lastUpdateBpDiastolic() const;
-  std::optional<TimePoint> lastUpdateTempCavity() const;
-  std::optional<TimePoint> lastUpdateTempSkin() const;
-  std::optional<TimePoint> lastUpdateTimestamp() const;
+  TimePoint lastUpdateEcg() const;
+  TimePoint lastUpdateSpo2() const;
+  TimePoint lastUpdateResp() const;
+  TimePoint lastUpdatePleth() const;
+  TimePoint lastUpdateBpSystolic() const;
+  TimePoint lastUpdateBpDiastolic() const;
+  TimePoint lastUpdateTempCavity() const;
+  TimePoint lastUpdateTempSkin() const;
+  TimePoint lastUpdateTimestamp() const;
 
 private:
-  void setField_(double& field, bool& hasFlag, std::optional<TimePoint>& ts, double v);
+  void setField_(double& field, bool& hasFlag, TimePoint& ts, double v);
 
   mutable std::mutex mtx_;
   SignalGenerator::SensorData data_{}; // from core/signal_generator.h
@@ -92,13 +92,13 @@ private:
   bool has_timestamp_ = false;
 
   // last update timestamps
-  std::optional<TimePoint> ts_ecg_;
-  std::optional<TimePoint> ts_spo2_;
-  std::optional<TimePoint> ts_resp_;
-  std::optional<TimePoint> ts_pleth_;
-  std::optional<TimePoint> ts_bp_systolic_;
-  std::optional<TimePoint> ts_bp_diastolic_;
-  std::optional<TimePoint> ts_temp_cavity_;
-  std::optional<TimePoint> ts_temp_skin_;
-  std::optional<TimePoint> ts_timestamp_;
+  TimePoint ts_ecg_;
+  TimePoint ts_spo2_;
+  TimePoint ts_resp_;
+  TimePoint ts_pleth_;
+  TimePoint ts_bp_systolic_;
+  TimePoint ts_bp_diastolic_;
+  TimePoint ts_temp_cavity_;
+  TimePoint ts_temp_skin_;
+  TimePoint ts_timestamp_;
 };
