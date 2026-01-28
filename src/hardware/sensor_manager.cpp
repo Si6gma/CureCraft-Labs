@@ -36,31 +36,45 @@ bool SensorManager::initialize()
         return false;
     }
 
-    std::cout << "[SensorMgr] I²C bus opened successfully" << std::endl;
+    std::cout << "[SensorMgr] I²C bus opened successfully" <<std::endl;
     
     // Try to detect the hub at 0x08
     std::cout << "[SensorMgr] Scanning for SensorHub..." << std::endl;
+    std::cout.flush();
+    
     bool hubDetected = i2c_->deviceExists(HUB_I2C_ADDRESS);
     
     if (hubDetected)
     {
         std::cout << "[SensorMgr] ✓ SensorHub detected at 0x" 
                   << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
+        std::cout.flush();
+        
+        // Scan for individual sensors
+        int count = scanSensors();
+        std::cout << "[SensorMgr] Found " << count << " sensor(s)" << std::endl;
+        std::cout.flush();
     }
     else
     {
         std::cerr << "[SensorMgr] ✗ SensorHub not detected at 0x" 
                   << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
+        std::cerr.flush();
         if (!mockMode_)
         {
             std::cerr << "[SensorMgr] Running without hardware sensors" << std::endl;
+            std::cerr.flush();
         }
-        return true;
     }
 
-    // Now probe for individual sensors
+    return true;
+}
+
+int SensorManager::scanSensors()
+{
     // These are the I2C addresses of sensors connected to the hub
     std::cout << "[SensorMgr] Scanning for sensors..." << std::endl;
+    std::cout.flush();
     
     const uint8_t ECG_ADDR = 0x40;
     const uint8_t SPO2_ADDR = 0x41;
@@ -87,10 +101,9 @@ bool SensorManager::initialize()
             std::cout << "[SensorMgr] ✗ " << pair.second.name << " not detected" << std::endl;
         }
     }
+    std::cout.flush();
     
-    std::cout << "[SensorMgr] Found " << count << " sensor(s)" << std::endl;
-
-    return true;
+    return count;
 }
 
 bool SensorManager::isSensorAttached(SensorType type) const

@@ -227,15 +227,18 @@ bool I2CDriver::deviceExists(uint8_t address)
         bool exists = (address == HUB_I2C_ADDRESS);
         std::cout << "[I2C] Mock: Device 0x" << std::hex << (int)address << std::dec 
                   << (exists ? " EXISTS" : " not found") << std::endl;
+        std::cout.flush(); // Force output immediately
         return exists;
     }
 
 #ifdef __linux__
     std::cout << "[I2C] Probing device at 0x" << std::hex << (int)address << std::dec << "..." << std::endl;
+    std::cout.flush(); // Force output immediately
 
     if (ioctl(fd_, I2C_SLAVE, address) < 0)
     {
         std::cerr << "[I2C] Failed to select device 0x" << std::hex << (int)address << std::dec << std::endl;
+        std::cerr.flush();
         return false;
     }
 
@@ -244,10 +247,12 @@ bool I2CDriver::deviceExists(uint8_t address)
     if (read(fd_, &byte, 1) != 1)
     {
         std::cout << "[I2C] Device 0x" << std::hex << (int)address << std::dec << " not responding" << std::endl;
+        std::cout.flush();
         return false;
     }
 
     std::cout << "[I2C] ✓ Device 0x" << std::hex << (int)address << std::dec << " detected" << std::endl;
+    std::cout.flush();
     return true;
 #else
     return false;
