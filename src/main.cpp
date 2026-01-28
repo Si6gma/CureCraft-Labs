@@ -62,7 +62,12 @@ int main(int argc, char* argv[])
 
 
     mqtt.setBroker("127.0.0.1", 1883);        // change to broker IP if not local
-    mqtt.setClientId("curecraft-pi-01");      // unique client id
+    mqtt.setClientId("curecraft");      // unique client id
+
+    if (!mqtt.connect()) {
+        std::cerr << "MQTT connect failed\n";
+    }
+
 
     std::cout << std::endl;
     std::cout << "✅ Server is running!" << std::endl;
