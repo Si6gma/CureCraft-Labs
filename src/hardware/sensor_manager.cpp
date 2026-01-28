@@ -1,7 +1,10 @@
 #include "hardware/sensor_manager.h"
 #include <iostream>
-#include <sstream>
 #include <iomanip>
+#include <sstream>
+#include <bitset>
+#include <thread>
+#include <chrono>
 
 SensorManager::SensorManager(bool mockMode)
     : mockMode_(mockMode)
@@ -36,7 +39,7 @@ bool SensorManager::initialize()
         return false;
     }
 
-    std::cout << "[SensorMgr] I²C bus opened successfully" <<std::endl;
+    std::cout << "[SensorMgr] I²C bus opened successfully" << std::endl;
     
     // Try to detect the hub at 0x08
     std::cout << "[SensorMgr] Scanning for SensorHub..." << std::endl;
@@ -50,7 +53,7 @@ bool SensorManager::initialize()
                   << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
         std::cout.flush();
         
-        // Scan for individual sensors
+        // Scan for individual sensors using hub protocol
         int count = scanSensors();
         std::cout << "[SensorMgr] Found " << count << " sensor(s)" << std::endl;
         std::cout.flush();
@@ -72,22 +75,41 @@ bool SensorManager::initialize()
 
 int SensorManager::scanSensors()
 {
-    // These are the I2C addresses of sensors connected to the hub
-    std::cout << "[SensorMgr] Scanning for sensors..." << std::endl;
+    std::cout << "[SensorMgr] Requesting sensor scan from hub..." << std::endl;
     std::cout.flush();
     
-    const uint8_t ECG_ADDR = 0x40;
-    const uint8_t SPO2_ADDR = 0x41;
-    const uint8_t TEMP_ADDR = 0x42;
-    const uint8_t NIBP_ADDR = 0x43;
+    // Send SCAN command (0x01) to hub
+    const uint8_t CMD_SCAN = 0x01;
+    if (!i2c_->writeByte(HUB_I2C_ADDRESS, CMD_SCAN))
+    {
+        std::cerr << "[SensorMgr] Failed to send SCAN command" << std::endl;
+        std::cerr.flush();
+        return 0;
+    }
     
-    sensors_[SensorType::ECG].attached = i2c_->deviceExists(ECG_ADDR);
-    sensors_[SensorType::SpO2].attached = i2c_->deviceExists(SPO2_ADDR);
-    sensors_[SensorType::Temperature].attached = i2c_->deviceExists(TEMP_ADDR);
-    sensors_[SensorType::NIBP].attached = i2c_->deviceExists(NIBP_ADDR);
+    // Small delay for SAMD21 to scan
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // Read status byte from hub
+    uint8_t statusByte = 0;
+    if (!i2c_->readByte(HUB_I2C_ADDRESS, statusByte))
+    {
+        std::cerr << "[SensorMgr] Failed to read scan results" << std::endl;
+        std::cerr.flush();
+        return 0;
+    }
+    
+    std::cout << "[SensorMgr] Status byte: 0b" << std::bitset<8>(statusByte) << std::endl;
+    std::cout.flush();
+    
+    // Parse status byte (each bit = sensor present)
+    sensors_[SensorType::ECG].attached = (statusByte & (1 << 0)) != 0;
+    sensors_[SensorType::SpO2].attached = (statusByte & (1 << 1)) != 0;
+    sensors_[SensorType::Temperature].attached = (statusByte & (1 << 2)) != 0;
+    sensors_[SensorType::NIBP].attached = (statusByte & (1 << 3)) != 0;
     sensors_[SensorType::Respiratory].attached = false; // Derived signal
     
-    // Count detected sensors
+    // Count and report detected sensors
     int count = 0;
     for (const auto& pair : sensors_)
     {
