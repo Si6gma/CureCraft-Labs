@@ -46,9 +46,10 @@ enum class SensorId : uint8_t
 {
     ECG = 0x00,           ///< ECG sensor (on W1 bus, typically 0x40)
     SPO2 = 0x01,          ///< SpO2 sensor (on W1 bus, typically 0x41)
-    TEMPERATURE = 0x02,   ///< Temperature sensor (on W2 bus, typically 0x42)
+    TEMP_CORE = 0x02,     ///< Core Temperature (on W1 bus, typically 0x68)
     NIBP = 0x03,          ///< NIBP sensor (on W2 bus, typically 0x43)
-    RESPIRATORY = 0x04    ///< Respiratory (derived signal, no physical sensor)
+    RESPIRATORY = 0x04,   ///< Respiratory (derived signal)
+    TEMP_SKIN = 0x05      ///< Skin Temperature (on W2 bus, typically 0x68)
 };
 
 // ============================================================================
@@ -70,9 +71,10 @@ namespace SensorStatusBits
 {
     constexpr uint8_t ECG = (1 << 0);           // Bit 0: ECG attached
     constexpr uint8_t SPO2 = (1 << 1);          // Bit 1: SpO2 attached
-    constexpr uint8_t TEMPERATURE = (1 << 2);   // Bit 2: Temperature attached
+    constexpr uint8_t TEMP_CORE = (1 << 2);     // Bit 2: Core Temp attached
     constexpr uint8_t NIBP = (1 << 3);          // Bit 3: NIBP attached
-    constexpr uint8_t RESPIRATORY = (1 << 4);   // Bit 4: Respiratory available
+    constexpr uint8_t TEMP_SKIN = (1 << 4);     // Bit 4: Skin Temp attached
+    constexpr uint8_t RESPIRATORY = (1 << 5);   // Bit 5: Respiratory (Virtual)
 }
 
 // ============================================================================

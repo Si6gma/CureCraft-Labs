@@ -9,6 +9,7 @@
 #include <memory>
 #include "core/signal_generator.h"
 #include "hardware/sensor_manager.h"
+#include "httplib.h"
 
 // Forward declarations
 class SensorManager;
@@ -78,6 +79,7 @@ private:
     
     SignalGenerator signalGen_;
     std::unique_ptr<SensorManager> sensorMgr_;
+    std::unique_ptr<httplib::Server> server_;
     
     std::unique_ptr<std::thread> serverThreadHandle_;
     std::unique_ptr<std::thread> dataThreadHandle_;

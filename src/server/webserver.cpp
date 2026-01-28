@@ -37,6 +37,7 @@ void WebServer::start()
     running_ = true;
     
     // Launch server thread
+    server_ = std::make_unique<httplib::Server>();
     serverThreadHandle_ = std::make_unique<std::thread>(&WebServer::serverThread, this);
     
     // Launch data streaming thread
@@ -58,6 +59,11 @@ void WebServer::stop()
     if (!running_) return;
     
     running_ = false;
+    
+    // Stop the HTTP server to unblock the listener
+    if (server_) {
+        server_->stop();
+    }
     
     // Wait for threads to finish
     if (serverThreadHandle_ && serverThreadHandle_->joinable()) {
@@ -89,16 +95,16 @@ int WebServer::getClientCount() const
 
 void WebServer::serverThread()
 {
-    httplib::Server server;
+    if (!server_) return;
     
-    server.set_logger([](const httplib::Request& req, const httplib::Response& res) {
+    server_->set_logger([](const httplib::Request& req, const httplib::Response& res) {
         std::cout << "Request: " << req.method << " " << req.path << " -> " << res.status << std::endl;
     });
 
     // Serve static files from web directory (configured later to allow API routes priority)
     
     // Login endpoint
-    server.Post("/api/login", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Post("/api/login", [this](const httplib::Request& req, httplib::Response& res) {
         // Parse JSON body (simple parsing for username/password)
         std::string body = req.body;
         
@@ -132,13 +138,13 @@ void WebServer::serverThread()
     });
     
     // Sensor status endpoint
-    server.Get("/api/sensors", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Get("/api/sensors", [this](const httplib::Request& req, httplib::Response& res) {
         std::string json = sensorMgr_->getSensorStatusJson();
         res.set_content(json, "application/json");
     });
     
     // Brightness control endpoint  
-    server.Post("/api/brightness", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Post("/api/brightness", [this](const httplib::Request& req, httplib::Response& res) {
         // In a real implementation, this would control screen brightness
         // For now, just acknowledge the request
         std::cout << "[API] Brightness change requested: " << req.body << std::endl;
@@ -146,7 +152,7 @@ void WebServer::serverThread()
     });
     
     // Server-Sent Events endpoint for real-time data
-    server.Get("/ws", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Get("/ws", [this](const httplib::Request& req, httplib::Response& res) {
         res.set_header("Content-Type", "text/event-stream");
         res.set_header("Cache-Control", "no-cache");
         res.set_header("Connection", "keep-alive");
@@ -178,7 +184,7 @@ void WebServer::serverThread()
     });
     
     // API endpoint to get server status
-    server.Get("/api/status", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Get("/api/status", [this](const httplib::Request& req, httplib::Response& res) {
         std::ostringstream json;
         json << "{"
              << "\"running\":true,"
@@ -200,7 +206,7 @@ void WebServer::serverThread()
     };
 
     // Serve static files manually to ensure API POST requests aren't shadowed by mount point
-    server.Get("/.*", [this, getMimeType](const httplib::Request& req, httplib::Response& res) {
+    server_->Get("/.*", [this, getMimeType](const httplib::Request& req, httplib::Response& res) {
         std::string path = req.path;
         if (path == "/") path = "/index.html";
         
@@ -227,7 +233,7 @@ void WebServer::serverThread()
     });
     
     std::cout << "Starting HTTP server on port " << port_ << "..." << std::endl;
-    server.listen("0.0.0.0", port_);
+    server_->listen("0.0.0.0", port_);
 }
 
 void WebServer::dataStreamThread()

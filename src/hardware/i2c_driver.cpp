@@ -394,8 +394,10 @@ float I2CDriver::generateMockValue(SensorId sensorId)
             return 0.8f + 0.2f * std::sin(2.0 * M_PI * 1.0 * time);
         case SensorId::SPO2:
             return 97.0f + 2.0f * std::sin(2.0 * M_PI * 1.2 * time);
-        case SensorId::TEMPERATURE:
+        case SensorId::TEMP_CORE:
             return 37.2f + 0.1f * std::sin(2.0 * M_PI * 0.01 * time);
+        case SensorId::TEMP_SKIN:
+            return 36.5f + 0.2f * std::sin(2.0 * M_PI * 0.01 * time);
         case SensorId::NIBP:
             return 120.0f; // Systolic
         case SensorId::RESPIRATORY:
@@ -410,7 +412,8 @@ uint8_t I2CDriver::generateMockStatusByte()
     // In mock mode, all sensors are present
     return SensorStatusBits::ECG | 
            SensorStatusBits::SPO2 | 
-           SensorStatusBits::TEMPERATURE | 
+           SensorStatusBits::TEMP_CORE | 
            SensorStatusBits::NIBP | 
+           SensorStatusBits::TEMP_SKIN |
            SensorStatusBits::RESPIRATORY;
 }

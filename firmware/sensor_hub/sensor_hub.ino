@@ -163,12 +163,12 @@ void scanSensors() {
         Serial.println("  ✗ SpO2");
     }
     
-    // Temperature sensor at 0x68 (can be on W1 or W2)
+    // Temperature sensor at 0x68 (W1 = Core Temp)
     if (probeSensor(WireSensorA, TEMP_ADDR)) {
-        sensorStatus |= (1 << 2);  // Bit 2 = Temperature
-        Serial.println("  ✓ Temperature (0x68)");
+        sensorStatus |= (1 << 2);  // Bit 2 = Core Temperature (W1)
+        Serial.println("  ✓ Core Temp (0x68)");
     } else {
-        Serial.println("  ✗ Temperature");
+        Serial.println("  ✗ Core Temp");
     }
     
     // ========================================================================
@@ -187,18 +187,14 @@ void scanSensors() {
         Serial.println(" ✗");
     }
     
-    // Temperature sensor on W2 (if not already detected on W1)
-    if (!(sensorStatus & (1 << 2))) {  // Only check if not found on W1
-        Serial.print("  Probing Temp...");
-        Serial.flush();
-        if (probeSensor(WireSensorB, TEMP_ADDR)) {
-            sensorStatus |= (1 << 2);  // Bit 2 = Temperature
-            Serial.println(" ✓ (0x68)");
-        } else {
-            Serial.println(" ✗");
-        }
+    // Temperature sensor on W2 (W2 = Skin Temp) - Independent check
+    Serial.print("  Probing Skin Temp...");
+    Serial.flush();
+    if (probeSensor(WireSensorB, TEMP_ADDR)) {
+        sensorStatus |= (1 << 4);  // Bit 4 = Skin Temperature (W2)
+        Serial.println(" ✓ (0x68)");
     } else {
-        Serial.println("  (Temp already found on W1)");
+        Serial.println(" ✗");
     }
     
     Serial.println("========================================");
