@@ -142,34 +142,39 @@ bool I2CDriver::readSensor(SensorId sensorId, float &value)
 
 uint8_t I2CDriver::scanSensors()
 {
-#ifdef __linux__
-    struct i2c_rdwr_ioctl_data packets;
-    struct i2c_msg messages[2];
-
-    uint8_t cmd = static_cast<uint8_t>(HubCommand::SCAN_SENSORS);
-    uint8_t status = 0;
-
-    messages[0].addr = HUB_I2C_ADDRESS;
-    messages[0].flags = 0; // write
-    messages[0].len = 1;
-    messages[0].buf = &cmd;
-
-    messages[1].addr = HUB_I2C_ADDRESS;
-    messages[1].flags = I2C_M_RD;
-    messages[1].len = 1;
-    messages[1].buf = &status;
-
-    packets.msgs = messages;
-    packets.nmsgs = 2;
-
-    if (ioctl(fd_, I2C_RDWR, &packets) < 0)
+    if (mockMode_)
     {
-        std::cerr << "[I2C] Combined scan failed: "
-                  << strerror(errno) << std::endl;
+        // In mock mode, return a status indicating all sensors available
+        return 0x1F; // All 5 bits set: ECG|SpO2|CoreTemp|NIBP|SkinTemp
+    }
+
+#ifdef __linux__
+    if (fd_ < 0)
+        return 0xFF;
+
+    // Step 1: Send SCAN_SENSORS command
+    uint8_t cmd = static_cast<uint8_t>(HubCommand::SCAN_SENSORS);
+    if (!writeByte(HUB_I2C_ADDRESS, cmd))
+    {
+        std::cerr << "[I2C] Failed to send scan command" << std::endl;
+        return 0xFF;
+    }
+
+    // Step 2: Wait for hub to process and be ready to respond
+    // The hub processes scan in background, but may need time to prepare response
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    // Step 3: Read the status byte
+    uint8_t status = 0;
+    if (!readByte(HUB_I2C_ADDRESS, status))
+    {
+        std::cerr << "[I2C] Failed to read scan results" << std::endl;
         return 0xFF;
     }
 
     return status;
+#else
+    return 0xFF;
 #endif
 }
 bool I2CDriver::getSensorStatus(uint8_t *statusBuffer)
