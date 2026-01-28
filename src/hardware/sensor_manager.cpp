@@ -6,7 +6,8 @@
 SensorManager::SensorManager(bool mockMode)
     : mockMode_(mockMode)
 {
-    i2c_ = std::make_unique<I2CDriver>(1, mockMode);
+    // Pi 400 uses I2C bus 3 (GPIO 8/9) for SensorHub
+    i2c_ = std::make_unique<I2CDriver>(3, mockMode);
     initializeSensorMap();
 }
 
@@ -16,11 +17,11 @@ SensorManager::~SensorManager()
 
 void SensorManager::initializeSensorMap()
 {
-    sensors_[SensorType::ECG] = {false, 0.0f, ADDR_ECG, "ECG"};
-    sensors_[SensorType::SpO2] = {false, 0.0f, ADDR_SPO2, "SpO2"};
-    sensors_[SensorType::Temperature] = {false, 0.0f, ADDR_TEMP1, "Temperature"};
-    sensors_[SensorType::NIBP] = {false, 0.0f, ADDR_NIBP, "NIBP"};
-    sensors_[SensorType::Respiratory] = {true, 0.0f, 0, "Respiratory"}; // Always available (derived)
+    sensors_[SensorType::ECG] = {false, 0.0f, SensorId::ECG, "ECG"};
+    sensors_[SensorType::SpO2] = {false, 0.0f, SensorId::SPO2, "SpO2"};
+    sensors_[SensorType::Temperature] = {false, 0.0f, SensorId::TEMPERATURE, "Temperature"};
+    sensors_[SensorType::NIBP] = {false, 0.0f, SensorId::NIBP, "NIBP"};
+    sensors_[SensorType::Respiratory] = {true, 0.0f, SensorId::RESPIRATORY, "Respiratory"}; // Always available (derived)
 }
 
 bool SensorManager::initialize()
@@ -37,7 +38,22 @@ bool SensorManager::initialize()
 
     std::cout << "[SensorMgr] I²C bus opened successfully" << std::endl;
     
-    // Initial sensor scan
+    // Ping the hub first
+    if (i2c_->pingHub())
+    {
+        std::cout << "[SensorMgr] ✓ SensorHub detected at 0x" 
+                  << std::hex << (int)HUB_I2C_ADDRESS << std::dec << std::endl;
+    }
+    else
+    {
+        std::cerr << "[SensorMgr] ✗ SensorHub not responding" << std::endl;
+        if (!mockMode_)
+        {
+            return false;
+        }
+    }
+    
+    // Scan for sensors
     int count = scanSensors();
     std::cout << "[SensorMgr] Found " << count << " sensors" << std::endl;
 
@@ -46,58 +62,42 @@ bool SensorManager::initialize()
 
 int SensorManager::scanSensors()
 {
+    std::cout << "[SensorMgr] Scanning for sensors via hub..." << std::endl;
+
+    // Use hub's SCAN_SENSORS command
+    uint8_t statusByte = i2c_->scanSensors();
+    
+    if (statusByte == 0xFF)
+    {
+        std::cerr << "[SensorMgr] Failed to scan sensors" << std::endl;
+        return 0;
+    }
+
     int count = 0;
 
-    std::cout << "[SensorMgr] Scanning for sensors..." << std::endl;
+    // Update sensor status based on status byte
+    sensors_[SensorType::ECG].attached = (statusByte & SensorStatusBits::ECG) != 0;
+    sensors_[SensorType::SpO2].attached = (statusByte & SensorStatusBits::SPO2) != 0;
+    sensors_[SensorType::Temperature].attached = (statusByte & SensorStatusBits::TEMPERATURE) != 0;
+    sensors_[SensorType::NIBP].attached = (statusByte & SensorStatusBits::NIBP) != 0;
+    sensors_[SensorType::Respiratory].attached = (statusByte & SensorStatusBits::RESPIRATORY) != 0;
 
-    for (auto& pair : sensors_)
+    // Print results
+    for (const auto& pair : sensors_)
     {
-        SensorType type = pair.first;
-        SensorInfo& info = pair.second;
-
-        // Skip respiratory (it's derived from other signals)
-        if (type == SensorType::Respiratory)
+        const SensorInfo& info = pair.second;
+        if (info.attached)
         {
-            continue;
-        }
-
-        // Check if sensor responds
-        bool present = pingSensor(info.i2cAddress);
-        info.attached = present;
-
-        if (present)
-        {
-            std::cout << "[SensorMgr] ✓ " << info.name << " detected at 0x" 
-                      << std::hex << (int)info.i2cAddress << std::dec << std::endl;
+            std::cout << "[SensorMgr] ✓ " << info.name << " detected" << std::endl;
             count++;
         }
         else
         {
-            std::cout << "[SensorMgr] ✗ " << info.name << " not found at 0x" 
-                      << std::hex << (int)info.i2cAddress << std::dec << std::endl;
+            std::cout << "[SensorMgr] ✗ " << info.name << " not found" << std::endl;
         }
     }
 
     return count;
-}
-
-bool SensorManager::pingSensor(uint8_t address)
-{
-    // Send PING command
-    if (!i2c_->writeByte(address, CMD_PING))
-    {
-        return false;
-    }
-
-    // Read response
-    uint8_t response;
-    if (!i2c_->readByte(address, response))
-    {
-        return false;
-    }
-
-    // Check for expected response (0xAA)
-    return (response == 0xAA);
 }
 
 bool SensorManager::isSensorAttached(SensorType type) const
@@ -125,21 +125,8 @@ bool SensorManager::readSensor(SensorType type, float& value)
         return false;
     }
 
-    // Skip I²C for respiratory (derived signal)
-    if (type == SensorType::Respiratory)
-    {
-        value = info.lastValue;
-        return true;
-    }
-
-    // Send READ_DATA command
-    if (!i2c_->writeByte(info.i2cAddress, CMD_READ_DATA))
-    {
-        return false;
-    }
-
-    // Read float value (4 bytes)
-    if (!i2c_->readFloat(info.i2cAddress, value))
+    // Use hub's READ_SENSOR command
+    if (!i2c_->readSensor(info.sensorId, value))
     {
         return false;
     }
@@ -170,4 +157,17 @@ std::string SensorManager::getSensorStatusJson() const
     json << "\"resp\":" << (isSensorAttached(SensorType::Respiratory) ? "true" : "false");
     json << "}";
     return json.str();
+}
+
+SensorId SensorManager::sensorTypeToId(SensorType type) const
+{
+    switch (type)
+    {
+        case SensorType::ECG: return SensorId::ECG;
+        case SensorType::SpO2: return SensorId::SPO2;
+        case SensorType::Temperature: return SensorId::TEMPERATURE;
+        case SensorType::NIBP: return SensorId::NIBP;
+        case SensorType::Respiratory: return SensorId::RESPIRATORY;
+        default: return SensorId::ECG;
+    }
 }
