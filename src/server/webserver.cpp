@@ -58,25 +58,34 @@ void WebServer::stop()
 {
     if (!running_) return;
     
+    std::cout << "[WebServer] Stopping..." << std::endl;
     running_ = false;
+    shutdownCv_.notify_all();
     
     // Stop the HTTP server to unblock the listener
     if (server_) {
+        std::cout << "[WebServer] Stopping HTTP listener..." << std::endl;
         server_->stop();
     }
     
     // Wait for threads to finish
     if (serverThreadHandle_ && serverThreadHandle_->joinable()) {
+        std::cout << "[WebServer] Joining server thread..." << std::endl;
         serverThreadHandle_->join();
+        std::cout << "[WebServer] Server thread joined." << std::endl;
     }
     if (dataThreadHandle_ && dataThreadHandle_->joinable()) {
+        std::cout << "[WebServer] Joining data thread..." << std::endl;
         dataThreadHandle_->join();
+        std::cout << "[WebServer] Data thread joined." << std::endl;
     }
     if (sensorScanThreadHandle_ && sensorScanThreadHandle_->joinable()) {
+        std::cout << "[WebServer] Joining sensor scan thread..." << std::endl;
         sensorScanThreadHandle_->join();
+        std::cout << "[WebServer] Sensor scan thread joined." << std::endl;
     }
     
-    std::cout << "Server stopped" << std::endl;
+    std::cout << "[WebServer] Server stopped cleanly" << std::endl;
 }
 
 void WebServer::setUpdateRate(int hz)
@@ -243,7 +252,11 @@ void WebServer::dataStreamThread()
     
     while (running_) {
         const int intervalMs = 1000 / updateRateHz_.load();
-        std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+        
+        std::unique_lock<std::mutex> lock(shutdownMutex_);
+        if (shutdownCv_.wait_for(lock, std::chrono::milliseconds(intervalMs), [this]{ return !running_; })) {
+            break;
+        }
     }
 }
 
@@ -255,7 +268,12 @@ void WebServer::sensorScanThread()
     
     while (running_) {
         // Wait 3 seconds (gives SAMD21 time to complete scan)
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        {
+            std::unique_lock<std::mutex> lock(shutdownMutex_);
+            if (shutdownCv_.wait_for(lock, std::chrono::seconds(3), [this]{ return !running_; })) {
+                break;
+            }
+        }
         
         if (!running_) break;
         

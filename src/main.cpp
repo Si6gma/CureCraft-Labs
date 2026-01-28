@@ -1,5 +1,6 @@
 #include <iostream>
 #include <csignal>
+#include <unistd.h>
 #include <atomic>
 #include "server/webserver.h"
 
@@ -7,7 +8,8 @@ std::atomic<bool> shutdownRequested(false);
 
 void signalHandler(int signal)
 {
-    std::cout << "\n🛑 Shutdown signal received..." << std::endl;
+    const char* msg = "\n🛑 Shutdown signal received...\n";
+    write(STDERR_FILENO, msg, 31);
     shutdownRequested = true;
 }
 
@@ -43,6 +45,14 @@ int main(int argc, char* argv[])
             std::cout << "Example:" << std::endl;
             std::cout << "  " << argv[0] << " --port 3000 --mock" << std::endl;
             return 0;
+        }
+    }
+
+    // Smart default: If default ./web doesn't exist, try ../web (common when running from build dir)
+    if (webRoot == "./web" && access(webRoot.c_str(), F_OK) != 0) {
+        if (access("../web", F_OK) == 0) {
+            webRoot = "../web";
+            std::cout << "Notice: Default ./web not found, using ../web" << std::endl;
         }
     }
 

@@ -55,12 +55,12 @@ find_package(Threads REQUIRED)
 # This finds mosquitto in both /usr and /usr/local.
 find_path(MOSQUITTO_INCLUDE_DIR
         NAMES mosquitto.h
-        HINTS /usr/include /usr/local/include
+        HINTS /usr/include /usr/local/include /opt/homebrew/include
 )
 
 find_library(MOSQUITTO_LIBRARY
         NAMES mosquitto
-        HINTS /usr/lib /usr/local/lib
+        HINTS /usr/lib /usr/local/lib /opt/homebrew/lib
 )
 
 if(NOT MOSQUITTO_INCLUDE_DIR OR NOT MOSQUITTO_LIBRARY)

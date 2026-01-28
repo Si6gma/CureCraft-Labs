@@ -85,6 +85,10 @@ private:
     std::unique_ptr<std::thread> dataThreadHandle_;
     std::unique_ptr<std::thread> sensorScanThreadHandle_;
     
+    // Shutdown synchronization
+    std::mutex shutdownMutex_;
+    std::condition_variable shutdownCv_;
+    
     // Thread-safe client management
     mutable std::mutex clientsMutex_;
     std::vector<void*> clients_; // WebSocket connection handles
