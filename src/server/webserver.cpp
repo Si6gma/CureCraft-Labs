@@ -42,6 +42,9 @@ void WebServer::start()
     // Launch data streaming thread
     dataThreadHandle_ = std::make_unique<std::thread>(&WebServer::dataStreamThread, this);
     
+    // Launch sensor scanning thread (for hot-plug detection)
+    sensorScanThreadHandle_ = std::make_unique<std::thread>(&WebServer::sensorScanThread, this);
+    
     std::cout << "🌐 Web Server started on http://localhost:" << port_ << std::endl;
     std::cout << "📂 Serving files from: " << webRoot_ << std::endl;
     std::cout << "🔌 Data endpoint: http://localhost:" << port_ << "/ws" << std::endl;
@@ -62,6 +65,9 @@ void WebServer::stop()
     }
     if (dataThreadHandle_ && dataThreadHandle_->joinable()) {
         dataThreadHandle_->join();
+    }
+    if (sensorScanThreadHandle_ && sensorScanThreadHandle_->joinable()) {
+        sensorScanThreadHandle_->join();
     }
     
     std::cout << "Server stopped" << std::endl;
@@ -232,6 +238,23 @@ void WebServer::dataStreamThread()
     while (running_) {
         const int intervalMs = 1000 / updateRateHz_.load();
         std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
+    }
+}
+
+void WebServer::sensorScanThread()
+{
+    // This thread periodically rescans for sensors (hot-plug detection)
+    std::cout << "[WebServer] Sensor hot-plug detection enabled (scans every second)" << std::endl;
+    std::cout.flush();
+    
+    while (running_) {
+        // Wait 1 second
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        
+        if (!running_) break;
+        
+        // Rescan for sensors
+        sensorMgr_->scanSensors();
     }
 }
 
