@@ -2,11 +2,18 @@
 # Launcher for CureCraft - displays on native screen
 # Works both locally (HDMI) and remotely (when viewing desktop via VNC)
 
-APP_PATH="/home/admin/Code/CureCraft-Labs/build/curecraft"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+APP_PATH="$PROJECT_ROOT/build/curecraft"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting CureCraft Patient Monitor Web Server..."
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Web server will be available at http://localhost:8080"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Project Root: $PROJECT_ROOT"
+
+# Ensure we run from the project root so default paths work, 
+# but also pass explicit web-root for safety
+cd "$PROJECT_ROOT"
 
 # Start the web server binary
 # Note: The binary runs in foreground, which is what systemd expects for Type=simple
-exec "$APP_PATH"
+exec "$APP_PATH" --web-root "$PROJECT_ROOT/web"

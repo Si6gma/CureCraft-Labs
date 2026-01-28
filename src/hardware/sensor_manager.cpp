@@ -22,7 +22,8 @@ void SensorManager::initializeSensorMap()
 {
     sensors_[SensorType::ECG] = {false, 0.0f, SensorId::ECG, "ECG"};
     sensors_[SensorType::SpO2] = {false, 0.0f, SensorId::SPO2, "SpO2"};
-    sensors_[SensorType::Temperature] = {false, 0.0f, SensorId::TEMPERATURE, "Temperature"};
+    sensors_[SensorType::TempCore] = {false, 0.0f, SensorId::TEMP_CORE, "Core Temp"};
+    sensors_[SensorType::TempSkin] = {false, 0.0f, SensorId::TEMP_SKIN, "Skin Temp"};
     sensors_[SensorType::NIBP] = {false, 0.0f, SensorId::NIBP, "NIBP"};
     sensors_[SensorType::Respiratory] = {true, 0.0f, SensorId::RESPIRATORY, "Respiratory"}; // Always available (derived)
 }
@@ -102,21 +103,20 @@ int SensorManager::scanSensors()
     std::cout << "[SensorMgr] Status byte: 0b" << std::bitset<8>(statusByte) << std::endl;
     std::cout.flush();
     
-    // Parse status byte according to firmware bit assignments:
-    // Bit 0: ECG sensor (0x40 on W1)
-    // Bit 1: SpO2 sensor (0x41 on W1)
-    // Bit 2: Temperature sensor (0x68 on W1 or W2)
-    // Bit 3: NIBP sensor (0x43 on W2)
+    // Parse status byte according to firmware bit assignments
+    using namespace SensorStatusBits;
     
-    bool ecgDetected = (statusByte & (1 << 0)) != 0;
-    bool spo2Detected = (statusByte & (1 << 1)) != 0;
-    bool tempDetected = (statusByte & (1 << 2)) != 0;
-    bool nibpDetected = (statusByte & (1 << 3)) != 0;
+    bool ecgDetected = (statusByte & ECG) != 0;
+    bool spo2Detected = (statusByte & SPO2) != 0;
+    bool coreTempDetected = (statusByte & TEMP_CORE) != 0;
+    bool nibpDetected = (statusByte & NIBP) != 0;
+    bool skinTempDetected = (statusByte & TEMP_SKIN) != 0;
     
     // Update sensor attachment status
     sensors_[SensorType::ECG].attached = ecgDetected;
     sensors_[SensorType::SpO2].attached = spo2Detected;
-    sensors_[SensorType::Temperature].attached = tempDetected;
+    sensors_[SensorType::TempCore].attached = coreTempDetected;
+    sensors_[SensorType::TempSkin].attached = skinTempDetected;
     sensors_[SensorType::NIBP].attached = nibpDetected;
     sensors_[SensorType::Respiratory].attached = false;  // Derived signal, not a physical sensor
     
@@ -137,11 +137,18 @@ int SensorManager::scanSensors()
         std::cout << "[SensorMgr] ✗ SpO2 not detected" << std::endl;
     }
     
-    if (tempDetected) {
-        std::cout << "[SensorMgr] ✓ Temperature detected (0x68)" << std::endl;
+    if (coreTempDetected) {
+        std::cout << "[SensorMgr] ✓ Core Temp detected (W1 0x68)" << std::endl;
         count++;
     } else {
-        std::cout << "[SensorMgr] ✗ Temperature not detected" << std::endl;
+        std::cout << "[SensorMgr] ✗ Core Temp not detected" << std::endl;
+    }
+
+    if (skinTempDetected) {
+        std::cout << "[SensorMgr] ✓ Skin Temp detected (W2 0x68)" << std::endl;
+        count++;
+    } else {
+        std::cout << "[SensorMgr] ✗ Skin Temp not detected" << std::endl;
     }
     
     if (nibpDetected) {
@@ -191,107 +198,6 @@ const SensorInfo& SensorManager::getSensorInfo(SensorType type) const
     }
     return dummy;
 }
-
-std::string SensorManager::getSensorStatusJson() const
-{
-    std::ostringstream json;
-    json << "{";
-    json << "\"ecg\":" << (isSensorAttached(SensorType::ECG) ? "true" : "false") << ",";
-    json << "\"spo2\":" << (isSensorAttached(SensorType::SpO2) ? "true" : "false") << ",";
-    json << "\"temp\":" << (isSensorAttached(SensorType::Temperature) ? "true" : "false") << ",";
-    json << "\"nibp\":" << (isSensorAttached(SensorType::NIBP) ? "true" : "false") << ",";
-    json << "\"resp\":" << (isSensorAttached(SensorType::Respiratory) ? "true" : "false");
-    json << "}";
-    return json.str();
-}
-
-SensorId SensorManager::sensorTypeToId(SensorType type) const
-{
-// ... (previous code)
-
-void SensorManager::initializeSensorMap()
-{
-    sensors_[SensorType::ECG] = {false, 0.0f, SensorId::ECG, "ECG"};
-    sensors_[SensorType::SpO2] = {false, 0.0f, SensorId::SPO2, "SpO2"};
-    sensors_[SensorType::TempCore] = {false, 0.0f, SensorId::TEMP_CORE, "Core Temp"};
-    sensors_[SensorType::TempSkin] = {false, 0.0f, SensorId::TEMP_SKIN, "Skin Temp"};
-    sensors_[SensorType::NIBP] = {false, 0.0f, SensorId::NIBP, "NIBP"};
-    sensors_[SensorType::Respiratory] = {true, 0.0f, SensorId::RESPIRATORY, "Respiratory"}; // Always available (derived)
-}
-
-// ... (initialization code remains same)
-
-int SensorManager::scanSensors()
-{
-    // ... (sending SCAN command code remains same)
-    
-    // Parse status byte according to firmware bit assignments:
-    // Bit 0: ECG sensor (0x40 on W1)
-    // Bit 1: SpO2 sensor (0x41 on W1)
-    // Bit 2: Core Temperature sensor (0x68 on W1)
-    // Bit 3: NIBP sensor (0x43 on W2)
-    // Bit 4: Skin Temperature sensor (0x68 on W2)
-    
-    using namespace SensorStatusBits;
-    
-    bool ecgDetected = (statusByte & ECG) != 0;
-    bool spo2Detected = (statusByte & SPO2) != 0;
-    bool coreTempDetected = (statusByte & TEMP_CORE) != 0;
-    bool nibpDetected = (statusByte & NIBP) != 0;
-    bool skinTempDetected = (statusByte & TEMP_SKIN) != 0;
-    
-    // Update sensor attachment status
-    sensors_[SensorType::ECG].attached = ecgDetected;
-    sensors_[SensorType::SpO2].attached = spo2Detected;
-    sensors_[SensorType::TempCore].attached = coreTempDetected;
-    sensors_[SensorType::TempSkin].attached = skinTempDetected;
-    sensors_[SensorType::NIBP].attached = nibpDetected;
-    sensors_[SensorType::Respiratory].attached = false;  // Derived signal
-    
-    // Count and report detected sensors
-    int count = 0;
-    
-    if (ecgDetected) {
-        std::cout << "[SensorMgr] ✓ ECG detected (0x40)" << std::endl;
-        count++;
-    } else {
-        std::cout << "[SensorMgr] ✗ ECG not detected" << std::endl;
-    }
-    
-    if (spo2Detected) {
-        std::cout << "[SensorMgr] ✓ SpO2 detected (0x41)" << std::endl;
-        count++;
-    } else {
-        std::cout << "[SensorMgr] ✗ SpO2 not detected" << std::endl;
-    }
-    
-    if (coreTempDetected) {
-        std::cout << "[SensorMgr] ✓ Core Temp detected (W1 0x68)" << std::endl;
-        count++;
-    } else {
-        std::cout << "[SensorMgr] ✗ Core Temp not detected" << std::endl;
-    }
-
-    if (skinTempDetected) {
-        std::cout << "[SensorMgr] ✓ Skin Temp detected (W2 0x68)" << std::endl;
-        count++;
-    } else {
-        std::cout << "[SensorMgr] ✗ Skin Temp not detected" << std::endl;
-    }
-    
-    if (nibpDetected) {
-        std::cout << "[SensorMgr] ✓ NIBP detected (0x43)" << std::endl;
-        count++;
-    } else {
-        std::cout << "[SensorMgr] ✗ NIBP not detected" << std::endl;
-    }
-    
-    std::cout.flush();
-    
-    return count;
-}
-
-// ... (readSensor implementation code)
 
 std::string SensorManager::getSensorStatusJson() const
 {
