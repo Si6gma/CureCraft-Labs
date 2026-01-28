@@ -1,6 +1,9 @@
 #!/bin/bash
 
 # Compile
+echo "Cleaning..."
+rm -f i2c_diag
+
 echo "Compiling i2c_diag..."
 g++ -o i2c_diag i2c_diag.cpp
 

@@ -25,8 +25,8 @@ TwiPinPair portSensorsB(W2_SCL, W2_SDA);
 
 // TwoWire instances
 TwoWire WireBackbone(&sercom3, W0_SDA, W0_SCL);  // Pi connection (SERCOM3)
-TwoWire WireSensorA(&sercom1, W1_SDA, W1_SCL);   // Sensor bus A (SERCOM1)
-TwoWire WireSensorB(&sercom4, W2_SDA, W2_SCL);   // Sensor bus B (SERCOM4)
+// TwoWire WireSensorA(&sercom1, W1_SDA, W1_SCL);   // Sensor bus A (SERCOM1)
+// TwoWire WireSensorB(&sercom4, W2_SDA, W2_SCL);   // Sensor bus B (SERCOM4)
 
 // I2C addresses
 const uint8_t HUB_ADDRESS = 0x08;
@@ -65,11 +65,11 @@ void setup() {
     portBackbone.setPinPeripheralStates();  // Use setPinPeripheralStates() for SERCOM3
 
     // Initialize sensor buses as I2C masters
-    WireSensorA.begin();
-    portSensorsA.setPinPeripheralAltStates();  // Use AltStates for SERCOM1
+    // WireSensorA.begin();
+    // portSensorsA.setPinPeripheralAltStates();  // Use AltStates for SERCOM1
 
-    WireSensorB.begin();
-    portSensorsB.setPinPeripheralStates();  // Use setPinPeripheralStates() for SERCOM4
+    // WireSensorB.begin();
+    // portSensorsB.setPinPeripheralStates();  // Use setPinPeripheralStates() for SERCOM4
     
     Serial.println("========================================");
     Serial.println("  SensorHub Scanner Firmware v1.0");
@@ -142,6 +142,7 @@ void scanSensors() {
     
     sensorStatus = 0;
     
+    /*
     // ========================================================================
     // Scan Bus A (W1) - Typically ECG, SpO2, and optionally Temperature
     // ========================================================================
@@ -196,6 +197,7 @@ void scanSensors() {
     } else {
         Serial.println(" ✗");
     }
+    */
     
     Serial.println("========================================");
     Serial.print("Status byte: 0b");
@@ -215,41 +217,40 @@ bool probeSensor(TwoWire &wire, uint8_t addr) {
     return (error == 0);  // 0 means ACK received
 }
 
-// Called when Pi sends data
+// State for I2C response
+volatile uint8_t activeCommand = 0;
+volatile uint8_t responseBuffer = 0;
+
+// Called when Pi sends data (CMD write)
 void onReceive(int numBytes) {
     if (numBytes > 0) {
-        lastCommand = WireBackbone.read();
+        // Read the command byte
+        activeCommand = WireBackbone.read();
         
-        Serial.print("Received command: 0x");
-        Serial.println(lastCommand, HEX);
-        
-        if (lastCommand == CMD_SCAN) {
-            needsScan = true;  // Scan in main loop
+        // signal scan if needed
+        if (activeCommand == CMD_SCAN) {
+            needsScan = true;
+            // Pre-load current status for immediate response
+            responseBuffer = sensorStatus;
+        } 
+        else if (activeCommand == CMD_PING) {
+            // Pre-load 0x42
+            responseBuffer = 0x42;
         }
-        
-        // Consume any extra bytes
+        else {
+            responseBuffer = 0x00;
+        }
+
+        // consume rest
         while (WireBackbone.available()) {
             WireBackbone.read();
         }
     }
 }
 
-// Called when Pi requests data
+// Called when Pi reads data
 void onRequest() {
-    if (lastCommand == CMD_PING) {
-        // Respond with 0x42 (magic ping response)
-        WireBackbone.write(0x42);
-        Serial.println("Sent: PING response (0x42)");
-    }
-    else if (lastCommand == CMD_SCAN) {
-        // Send sensor status byte
-        WireBackbone.write(sensorStatus);
-        Serial.print("Sent: Status 0b");
-        Serial.println(sensorStatus, BIN);
-    }
-    else {
-        // Unknown command - send 0x00
-        WireBackbone.write(0x00);
-        Serial.println("Sent: 0x00 (unknown command)");
-    }
+    // FORCE 0x42 for debugging. Ignore buffer.
+    WireBackbone.write(0x42);
 }
+

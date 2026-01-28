@@ -81,7 +81,13 @@ bool test_scan(int fd) {
     }
 
     std::cout << "  < Received: 0x" << std::hex << (int)resp << std::dec << std::endl;
-    std::cout << "  ✓ PASS: Read successful" << std::endl;
+    
+    if (resp == 0xFF) {
+        std::cout << "  ✗ FAIL: Received 0xFF (Bus Idle/Error)" << std::endl;
+        return false;
+    }
+    
+    std::cout << "  ✓ PASS: Read valid status" << std::endl;
     return true;
 }
 
