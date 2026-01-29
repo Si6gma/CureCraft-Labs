@@ -12,8 +12,7 @@ if(CCACHE_FOUND)
     set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
     message(STATUS "✓ Using ccache for faster incremental builds")
 else()
-    # Optional warning if ccache is missing
-    # message(STATUS "ccache not found - optional but recommended")
+    message(STATUS "⚠ ccache not found - builds will be slower")
 endif()
 
 # ============================================================================
@@ -53,17 +52,12 @@ set(SOURCES
         "${PROJECT_SOURCE_DIR}/src/core/signal_generator.cpp"
         "${PROJECT_SOURCE_DIR}/src/hardware/i2c_driver.cpp"
         "${PROJECT_SOURCE_DIR}/src/hardware/sensor_manager.cpp"
-
-        # "${PROJECT_SOURCE_DIR}/include/core/MQTTDriver.h"
-        # "${PROJECT_SOURCE_DIR}/src/core/MQTTDriver.cpp"
-        # "${PROJECT_SOURCE_DIR}/include/core/SensorDataStore.h"
-        # "${PROJECT_SOURCE_DIR}/src/core/SensorDataStore.cpp"
 )
 
 # Create main executable
 add_executable(curecraft ${SOURCES})
 
-# Compiler optimizations
+# Compiler optimizations and warnings
 target_compile_options(curecraft PRIVATE
         -O3
         -march=native
@@ -71,6 +65,9 @@ target_compile_options(curecraft PRIVATE
         -fdata-sections
         -pipe
         -ffast-math
+        -Wall
+        -Wextra
+        -Wpedantic
 )
 
 # Linker optimizations (Linux-specific flags, skip on macOS)
@@ -106,7 +103,7 @@ message(STATUS "")
 message(STATUS "========================================")
 message(STATUS "CureCraft Build Configuration")
 message(STATUS "========================================")
-message(STATUS "Platform:       Web UI (Qt Removed)")
+message(STATUS "Platform:       Web-Based Architecture")
 message(STATUS "Build Type:     ${CMAKE_BUILD_TYPE}")
 message(STATUS "Compiler:       ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "C++ Standard:   C++${CMAKE_CXX_STANDARD}")

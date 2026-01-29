@@ -148,34 +148,12 @@ sudo i2cget -y 1 0x08
 - Some boards may need DTR/RTS toggle
 
 
-## Common Issues & Solutions
-
-### Bus B Scanning Hangs
-
-**Symptom**: Firmware hangs at "Bus B (W2):" with no output after.
-
-**Root Cause**: Incorrect SERCOM configuration and pin peripheral states cause I2C bus lockup.
-
-**Solution**: Ensure correct SERCOM assignments and pin states:
-```cpp
-// Correct SERCOM assignments
-TwoWire WireBackbone(&sercom3, W0_SDA, W0_SCL);  // SERCOM3 for backbone
-TwoWire WireSensorA(&sercom1, W1_SDA, W1_SCL);   // SERCOM1 for W1
-TwoWire WireSensorB(&sercom4, W2_SDA, W2_SCL);   // SERCOM4 for W2
-
-// In setup():
-portBackbone.setPinPeripheralStates();      // NOT AltStates
-portSensorsA.setPinPeripheralAltStates();   // AltStates for SERCOM1
-portSensorsB.setPinPeripheralStates();      // NOT AltStates
-
-// Interrupt handler
-void SERCOM3_Handler(void) {  // SERCOM3, not SERCOM5
-    WireBackbone.onService();
-}
-```
-
 ## Files
 
-- `sensor_hub.ino` - Main firmware (use this!)
-- `TwiPinHelper.h` - Helper library for SERCOM pin configuration
-- `README.md` - This file
+- `sensor_hub.ino` - Main firmware
+- `TwiPinHelper.h` - SERCOM pin configuration helper
+- `README.md` - This documentation
+
+## Protocol Reference
+
+For detailed I2C protocol specifications, see: [include/hardware/i2c_protocol.h](../../include/hardware/i2c_protocol.h)
