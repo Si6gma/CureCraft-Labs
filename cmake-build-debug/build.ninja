@@ -52,56 +52,56 @@ build cmake_object_order_depends_target_curecraft: phony || .
 build CMakeFiles/curecraft.dir/src/main.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/main.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/main.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src
 
 build CMakeFiles/curecraft.dir/src/server/webserver.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/server/webserver.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/server/webserver.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src/server
 
 build CMakeFiles/curecraft.dir/src/server/auth.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/server/auth.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/server/auth.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src/server
 
 build CMakeFiles/curecraft.dir/src/core/signal_generator.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/core/signal_generator.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/core/signal_generator.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src/core
 
 build CMakeFiles/curecraft.dir/src/hardware/i2c_driver.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/hardware/i2c_driver.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/hardware/i2c_driver.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src/hardware
 
 build CMakeFiles/curecraft.dir/src/hardware/sensor_manager.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/hardware/sensor_manager.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/hardware/sensor_manager.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src/hardware
 
 build CMakeFiles/curecraft.dir/src/core/MQTTDriver.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/core/MQTTDriver.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/core/MQTTDriver.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src/core
 
 build CMakeFiles/curecraft.dir/src/core/SensorDataStore.cpp.o: CXX_COMPILER__curecraft_unscanned_Debug /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/src/core/SensorDataStore.cpp || cmake_object_order_depends_target_curecraft
   DEP_FILE = CMakeFiles/curecraft.dir/src/core/SensorDataStore.cpp.o.d
   FLAGS = -g -std=gnu++17 -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fvisibility=hidden -fvisibility-inlines-hidden -fcolor-diagnostics -O3 -march=native -ffunction-sections -fdata-sections -pipe -ffast-math
-  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include
+  INCLUDES = -I/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/include -I/opt/homebrew/include
   OBJECT_DIR = CMakeFiles/curecraft.dir
   OBJECT_FILE_DIR = CMakeFiles/curecraft.dir/src/core
 
@@ -113,8 +113,9 @@ build CMakeFiles/curecraft.dir/src/core/SensorDataStore.cpp.o: CXX_COMPILER__cur
 #############################################
 # Link the executable curecraft
 
-build curecraft: CXX_EXECUTABLE_LINKER__curecraft_Debug CMakeFiles/curecraft.dir/src/main.cpp.o CMakeFiles/curecraft.dir/src/server/webserver.cpp.o CMakeFiles/curecraft.dir/src/server/auth.cpp.o CMakeFiles/curecraft.dir/src/core/signal_generator.cpp.o CMakeFiles/curecraft.dir/src/hardware/i2c_driver.cpp.o CMakeFiles/curecraft.dir/src/hardware/sensor_manager.cpp.o CMakeFiles/curecraft.dir/src/core/MQTTDriver.cpp.o CMakeFiles/curecraft.dir/src/core/SensorDataStore.cpp.o
+build curecraft: CXX_EXECUTABLE_LINKER__curecraft_Debug CMakeFiles/curecraft.dir/src/main.cpp.o CMakeFiles/curecraft.dir/src/server/webserver.cpp.o CMakeFiles/curecraft.dir/src/server/auth.cpp.o CMakeFiles/curecraft.dir/src/core/signal_generator.cpp.o CMakeFiles/curecraft.dir/src/hardware/i2c_driver.cpp.o CMakeFiles/curecraft.dir/src/hardware/sensor_manager.cpp.o CMakeFiles/curecraft.dir/src/core/MQTTDriver.cpp.o CMakeFiles/curecraft.dir/src/core/SensorDataStore.cpp.o | /opt/homebrew/lib/libmosquitto.dylib
   FLAGS = -g -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk
+  LINK_LIBRARIES = /opt/homebrew/lib/libmosquitto.dylib
   OBJECT_DIR = CMakeFiles/curecraft.dir
   POST_BUILD = :
   PRE_LINK = :

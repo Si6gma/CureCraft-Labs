@@ -222,6 +222,12 @@ CureCraft_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 CureCraft_SOURCE_DIR:STATIC=/Users/yalukaiwo/Documents/ESE/CureCraft-Labs
 
+//Path to a file.
+MOSQUITTO_INCLUDE_DIR:PATH=/opt/homebrew/include
+
+//Path to a library.
+MOSQUITTO_LIBRARY:FILEPATH=/opt/homebrew/lib/libmosquitto.dylib
+
 
 ########################
 # INTERNAL cache entries

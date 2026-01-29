@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <atomic>
 #include "server/webserver.h"
+#include "core/MQTTDriver.h"
 
 namespace {
     constexpr int DEFAULT_PORT = 8080;
@@ -66,6 +67,20 @@ int main(int argc, char* argv[])
     WebServer server(port, webRoot, mockSensors);
     server.start();
 
+    auto& store = SensorDataStore::instance();
+
+    MQTTDriver mqtt(store);
+    mqtt.setKeepAlive(20);
+
+
+    mqtt.setBroker("127.0.0.1", 1883);        // change to broker IP if not local
+    mqtt.setClientId("curecraft");      // unique client id
+
+    if (!mqtt.connect()) {
+        std::cerr << "MQTT connect failed\n";
+    }
+
+
     std::cout << std::endl;
     std::cout << "✅ Server is running!" << std::endl;
     std::cout << "📱 Open browser to: http://localhost:" << port << std::endl;
@@ -73,7 +88,8 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
 
     while (!shutdownRequested) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        mqtt.loop(10);
     }
 
     std::cout << "Stopping server..." << std::endl;
