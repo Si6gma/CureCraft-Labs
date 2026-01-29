@@ -408,8 +408,122 @@ bool I2CDriver::readBytes(uint8_t address, uint8_t *buffer, size_t length)
 }
 
 // ============================================================================
-// Mock Data Generation
+// Mock Data Generation - Realistic Medical Waveforms
 // ============================================================================
+
+// Helper function: Generate realistic ECG waveform (Normal Sinus Rhythm)
+float generateECGWaveform(double time) {
+    const double HR = 75.0; // Heart rate in BPM
+    const double beatInterval = 60.0 / HR; // ~0.8 seconds per beat
+    
+    // Position within current beat cycle (0.0 to 1.0)
+    double beatPhase = std::fmod(time, beatInterval) / beatInterval;
+    
+    // Baseline
+    float value = 0.0f;
+    
+    // P wave (atrial depolarization) at 0.0-0.1 of cycle
+    if (beatPhase < 0.1) {
+        double pPhase = beatPhase / 0.1;
+        value = 0.15f * std::exp(-50.0 * std::pow(pPhase - 0.5, 2));
+    }
+    // PR segment (isoelectric) at 0.1-0.2
+    else if (beatPhase < 0.2) {
+        value = 0.0f;
+    }
+    // QRS complex (ventricular depolarization) at 0.2-0.3
+    else if (beatPhase < 0.3) {
+        double qrsPhase = (beatPhase - 0.2) / 0.1;
+        // Q wave (small negative deflection)
+        if (qrsPhase < 0.2) {
+            value = -0.1f * (qrsPhase / 0.2);
+        }
+        // R wave (large positive spike)
+        else if (qrsPhase < 0.6) {
+            double rPhase = (qrsPhase - 0.2) / 0.4;
+            value = 1.0f * std::exp(-25.0 * std::pow(rPhase - 0.5, 2));
+        }
+        // S wave (negative deflection)
+        else {
+            double sPhase = (qrsPhase - 0.6) / 0.4;
+            value = -0.2f * std::exp(-25.0 * std::pow(sPhase - 0.3, 2));
+        }
+    }
+    // ST segment at 0.3-0.4
+    else if (beatPhase < 0.4) {
+        value = 0.0f;
+    }
+    // T wave (ventricular repolarization) at 0.4-0.7
+    else if (beatPhase < 0.7) {
+        double tPhase = (beatPhase - 0.4) / 0.3;
+        value = 0.3f * std::exp(-8.0 * std::pow(tPhase - 0.5, 2));
+    }
+    // Return to baseline
+    else {
+        value = 0.0f;
+    }
+    
+    // Scale to typical ECG voltage range and add baseline offset
+    return 0.5f + value * 0.4f;
+}
+
+// Helper function: Generate pulsatile waveform for SpO2/Pleth
+float generatePlethWaveform(double time) {
+    const double HR = 75.0; // Match ECG heart rate
+    const double beatInterval = 60.0 / HR;
+    
+    double beatPhase = std::fmod(time, beatInterval) / beatInterval;
+    
+    float value = 0.0f;
+    
+    if (beatPhase < 0.3) {
+        // Rapid systolic upstroke
+        double upstrokePhase = beatPhase / 0.3;
+        value = std::pow(upstrokePhase, 2.0);
+    }
+    else if (beatPhase < 0.5) {
+        // Dicrotic notch
+        double notchPhase = (beatPhase - 0.3) / 0.2;
+        value = 1.0f - 0.15f * std::sin(notchPhase * M_PI);
+    }
+    else {
+        // Diastolic decay
+        double decayPhase = (beatPhase - 0.5) / 0.5;
+        value = (1.0f - 0.15f) * std::exp(-3.0 * decayPhase);
+    }
+    
+    // Add small baseline noise for realism
+    value += 0.02f * std::sin(2.0 * M_PI * 15.0 * time);
+    
+    return value;
+}
+
+// Helper function: Generate realistic respiratory waveform
+float generateRespiratoryWaveform(double time) {
+    const double RR = 14.0; // Respiratory rate in breaths/min
+    const double breathInterval = 60.0 / RR; // ~4.3 seconds per breath
+    
+    double breathPhase = std::fmod(time, breathInterval) / breathInterval;
+    
+    float value;
+    
+    // Inhalation is faster (40% of cycle), exhalation is slower (60%)
+    if (breathPhase < 0.4) {
+        // Inhalation - steeper curve
+        double inhalePhase = breathPhase / 0.4;
+        value = 0.5f * (1.0f - std::cos(inhalePhase * M_PI));
+    }
+    else {
+        // Exhalation - gentler curve
+        double exhalePhase = (breathPhase - 0.4) / 0.6;
+        value = 0.5f * (1.0f + std::cos(exhalePhase * M_PI));
+    }
+    
+    // Add slight amplitude variation for natural breathing
+    value *= (1.0f + 0.1f * std::sin(2.0 * M_PI * 0.05 * time));
+    
+    return value;
+}
 
 float I2CDriver::generateMockValue(SensorId sensorId)
 {
@@ -419,21 +533,33 @@ float I2CDriver::generateMockValue(SensorId sensorId)
     switch (sensorId)
     {
     case SensorId::ECG:
-        return 0.8f + 0.2f * std::sin(2.0 * M_PI * 1.0 * time);
+        return generateECGWaveform(time);
+        
     case SensorId::SPO2:
-        return 97.0f + 2.0f * std::sin(2.0 * M_PI * 1.2 * time);
+        // SpO2 percentage - should be relatively stable, not a waveform
+        // Realistic range: 96-99% with slow variation
+        return 97.5f + 1.0f * std::sin(2.0 * M_PI * 0.02 * time);
+        
     case SensorId::TEMP_CORE:
-        return 37.2f + 0.1f * std::sin(2.0 * M_PI * 0.01 * time);
+        // Core temperature with slow drift
+        return 37.2f + 0.05f * std::sin(2.0 * M_PI * 0.01 * time);
+        
     case SensorId::TEMP_SKIN:
-        return 36.5f + 0.2f * std::sin(2.0 * M_PI * 0.01 * time);
+        // Skin temperature with slightly more variation
+        return 36.5f + 0.1f * std::sin(2.0 * M_PI * 0.01 * time);
+        
     case SensorId::NIBP:
+        // Blood pressure (static for now, would need NIBP-specific updates)
         return 120.0f;
+        
     case SensorId::RESPIRATORY:
-        return 16.0f + 2.0f * std::sin(2.0 * M_PI * 0.25 * time);
+        return generateRespiratoryWaveform(time);
+        
     default:
         return 0.0f;
     }
 }
+
 
 uint8_t I2CDriver::generateMockStatusByte()
 {

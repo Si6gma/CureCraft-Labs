@@ -44,12 +44,18 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+# Find mosquitto MQTT library
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)
+
 # Source files
 set(SOURCES
         "${PROJECT_SOURCE_DIR}/src/main.cpp"
         "${PROJECT_SOURCE_DIR}/src/server/webserver.cpp"
         "${PROJECT_SOURCE_DIR}/src/server/auth.cpp"
         "${PROJECT_SOURCE_DIR}/src/core/signal_generator.cpp"
+        "${PROJECT_SOURCE_DIR}/src/core/MQTTDriver.cpp"
+        "${PROJECT_SOURCE_DIR}/src/core/SensorDataStore.cpp"
         "${PROJECT_SOURCE_DIR}/src/hardware/i2c_driver.cpp"
         "${PROJECT_SOURCE_DIR}/src/hardware/sensor_manager.cpp"
 )
@@ -81,11 +87,18 @@ endif()
 # Include directories
 target_include_directories(curecraft PRIVATE
         "${PROJECT_SOURCE_DIR}/include"
+        ${MOSQUITTO_INCLUDE_DIRS}
+)
+
+# Link directories (for mosquitto)
+target_link_directories(curecraft PRIVATE
+        ${MOSQUITTO_LIBRARY_DIRS}
 )
 
 # Link libraries
 target_link_libraries(curecraft PRIVATE
         Threads::Threads
+        ${MOSQUITTO_LIBRARIES}
 )
 
 # Install web assets
@@ -103,11 +116,12 @@ message(STATUS "")
 message(STATUS "========================================")
 message(STATUS "CureCraft Build Configuration")
 message(STATUS "========================================")
-message(STATUS "Platform:       Web-Based Architecture")
+message(STATUS "Platform:       Web-Based Architecture + MQTT")
 message(STATUS "Build Type:     ${CMAKE_BUILD_TYPE}")
 message(STATUS "Compiler:       ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "C++ Standard:   C++${CMAKE_CXX_STANDARD}")
 message(STATUS "LTO Enabled:    ${ipo_supported}")
 message(STATUS "ccache:         ${CCACHE_FOUND}")
+message(STATUS "mosquitto:      ${MOSQUITTO_VERSION}")
 message(STATUS "========================================")
 message(STATUS "")

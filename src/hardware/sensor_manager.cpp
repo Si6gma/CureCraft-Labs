@@ -172,8 +172,6 @@ int SensorManager::scanSensors()
 
 bool SensorManager::isSensorAttached(SensorType type) const
 {
-
-    return true;
     auto it = sensors_.find(type);
     if (it != sensors_.end())
     {

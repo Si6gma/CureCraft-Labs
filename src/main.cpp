@@ -4,6 +4,7 @@
 #include <atomic>
 #include "server/webserver.h"
 #include "core/MQTTDriver.h"
+#include "core/SensorDataStore.h"
 
 namespace {
     constexpr int DEFAULT_PORT = 8080;

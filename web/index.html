@@ -17,91 +17,165 @@
             <!-- Header -->
             <header class="header">
                 <div class="header-left">
-                    <h1 class="logo">CureCraft</h1>
+                    <h1 class="logo">🏥 CureCraft</h1>
                     <div class="status-indicator">
                         <span class="status-dot" id="statusDot"></span>
                         <span class="status-text" id="statusText">Connecting...</span>
                     </div>
                 </div>
                 <div class="header-right">
-                    <div class="control-panel">
-                        <button class="btn-toggle" id="btnToggleECG" data-signal="ecg">
-                            <span class="btn-icon">❤️</span>
-                            <span class="btn-label">ECG</span>
-                        </button>
-                        <button class="btn-toggle" id="btnToggleSpO2" data-signal="spo2">
-                            <span class="btn-icon">🫁</span>
-                            <span class="btn-label">SpO₂</span>
-                        </button>
-                        <button class="btn-toggle" id="btnToggleResp" data-signal="resp">
-                            <span class="btn-icon">💨</span>
-                            <span class="btn-label">Resp</span>
-                        </button>
+                    <div class="session-info">
+                        <span class="session-label">Session Time:</span>
+                        <span class="session-value" id="sessionDuration">00:00</span>
                     </div>
+                    <button class="btn-export" id="btnExport">
+                        <span class="btn-icon">📥</span>
+                        <span class="btn-label">Export Data</span>
+                    </button>
+                    <button class="btn-logout" id="btnLogout">
+                        <span class="btn-icon">🚪</span>
+                        <span class="btn-label">Logout</span>
+                    </button>
                 </div>
             </header>
 
             <!-- Main Content -->
             <main class="main-content">
-                <!-- Numeric Vitals -->
-                <section class="vitals-numeric">
-                    <div class="vital-item">
-                        <span class="vital-label">NIBP (mmHg)</span>
-                        <span class="vital-value" id="bp-value">--/--</span>
+                <!-- Patient Information -->
+                <section class="patient-info-card">
+                    <div class="patient-header">
+                        <h3 class="patient-title">Patient Information</h3>
+                        <span class="patient-id">ID: #<span id="patientId">00142</span></span>
                     </div>
-                    <div class="vital-item">
-                        <span class="vital-label">Temp Core (°C)</span>
-                        <span class="vital-value" id="temp-cavity-value">--.-</span>
-                    </div>
-                    <div class="vital-item">
-                        <span class="vital-label">Temp Skin (°C)</span>
-                        <span class="vital-value" id="temp-skin-value">--.-</span>
+                    <div class="patient-details">
+                        <div class="patient-detail">
+                            <span class="detail-label">Name:</span>
+                            <span class="detail-value" id="patientName">Johan Korten</span>
+                        </div>
+                        <div class="patient-detail">
+                            <span class="detail-label">Age:</span>
+                            <span class="detail-value" id="patientAge">67 years</span>
+                        </div>
+                        <div class="patient-detail">
+                            <span class="detail-label">Admission:</span>
+                            <span class="detail-value" id="admissionDate">Jan 28, 2026</span>
+                        </div>
+                        <div class="patient-detail">
+                            <span class="detail-label">Ward:</span>
+                            <span class="detail-value" id="wardName">ICU-A</span>
+                        </div>
                     </div>
                 </section>
 
-                <!-- ECG Chart -->
-                <section class="chart-container" id="ecgContainer">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Electrocardiogram (ECG)</h2>
-                        <div class="chart-badge ecg-badge">Heart Rate Monitor</div>
+                <!-- Vital Signs Summary Cards -->
+                <section class="vitals-grid">
+                    <div class="vital-card" data-vital="hr">
+                        <div class="vital-card-header">
+                            <span class="vital-icon">❤️</span>
+                            <span class="vital-name">Heart Rate</span>
+                        </div>
+                        <div class="vital-card-value" id="hrValue">--</div>
+                        <div class="vital-card-unit">bpm</div>
+                        <div class="vital-card-status normal" id="hrStatus">Normal</div>
                     </div>
-                    <canvas class="chart-canvas" id="ecgCanvas"></canvas>
+
+                    <div class="vital-card" data-vital="spo2">
+                        <div class="vital-card-header">
+                            <span class="vital-icon">🫁</span>
+                            <span class="vital-name">SpO₂</span>
+                        </div>
+                        <div class="vital-card-value" id="spo2Value">--</div>
+                        <div class="vital-card-unit">%</div>
+                        <div class="vital-card-status normal" id="spo2Status">Normal</div>
+                    </div>
+
+                    <div class="vital-card" data-vital="resp">
+                        <div class="vital-card-header">
+                            <span class="vital-icon">💨</span>
+                            <span class="vital-name">Resp. Rate</span>
+                        </div>
+                        <div class="vital-card-value" id="respValue">--</div>
+                        <div class="vital-card-unit">br/min</div>
+                        <div class="vital-card-status normal" id="respStatus">Normal</div>
+                    </div>
+
+                    <div class="vital-card" data-vital="bp">
+                        <div class="vital-card-header">
+                            <span class="vital-icon">🩺</span>
+                            <span class="vital-name">Blood Pressure</span>
+                        </div>
+                        <div class="vital-card-value" id="bpValue">--/--</div>
+                        <div class="vital-card-unit">mmHg</div>
+                        <div class="vital-card-status normal" id="bpStatus">Normal</div>
+                    </div>
+
+                    <div class="vital-card" data-vital="temp-core">
+                        <div class="vital-card-header">
+                            <span class="vital-icon">🌡️</span>
+                            <span class="vital-name">Temp (Core)</span>
+                        </div>
+                        <div class="vital-card-value" id="tempCoreValue">--.-</div>
+                        <div class="vital-card-unit">°C</div>
+                        <div class="vital-card-status normal" id="tempCoreStatus">Normal</div>
+                    </div>
+
+                    <div class="vital-card" data-vital="temp-skin">
+                        <div class="vital-card-header">
+                            <span class="vital-icon">🌡️</span>
+                            <span class="vital-name">Temp (Skin)</span>
+                        </div>
+                        <div class="vital-card-value" id="tempSkinValue">--.-</div>
+                        <div class="vital-card-unit">°C</div>
+                        <div class="vital-card-status normal" id="tempSkinStatus">Normal</div>
+                    </div>
                 </section>
 
-                <!-- SpO2 Chart -->
-                <section class="chart-container" id="spo2Container">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Blood Oxygen Saturation (SpO₂)</h2>
-                        <div class="chart-badge spo2-badge">Pulse Oximetry</div>
-                    </div>
-                    <canvas class="chart-canvas" id="spo2Canvas"></canvas>
-                </section>
+                <!-- Waveform Charts -->
+                <section class="charts-section">
+                    <h2 class="section-title">Real-time Waveforms</h2>
 
-                <!-- Respiratory Chart -->
-                <section class="chart-container" id="respContainer">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Respiratory Rate</h2>
-                        <div class="chart-badge resp-badge">Breathing Monitor</div>
+                    <!-- ECG Chart -->
+                    <div class="chart-container" id="ecgContainer">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Electrocardiogram (ECG)</h3>
+                            <div class="chart-badge ecg-badge">Heart Rate Monitor</div>
+                        </div>
+                        <canvas class="chart-canvas" id="ecgCanvas"></canvas>
                     </div>
-                    <canvas class="chart-canvas" id="respCanvas"></canvas>
-                </section>
 
-                <!-- Plethysmograph Chart -->
-                <section class="chart-container" id="plethContainer">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Plethysmograph</h2>
-                        <div class="chart-badge pleth-badge">Pulse Wave</div>
+                    <!-- SpO2 Chart -->
+                    <div class="chart-container" id="spo2Container">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Blood Oxygen Saturation (SpO₂)</h3>
+                            <div class="chart-badge spo2-badge">Pulse Oximetry</div>
+                        </div>
+                        <canvas class="chart-canvas" id="spo2Canvas"></canvas>
                     </div>
-                    <canvas class="chart-canvas" id="plethCanvas"></canvas>
+
+                    <!-- Respiratory Chart -->
+                    <div class="chart-container" id="respContainer">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Respiratory Rate</h3>
+                            <div class="chart-badge resp-badge">Breathing Monitor</div>
+                        </div>
+                        <canvas class="chart-canvas" id="respCanvas"></canvas>
+                    </div>
+
+                    <!-- Plethysmograph Chart -->
+                    <div class="chart-container" id="plethContainer">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Plethysmograph</h3>
+                            <div class="chart-badge pleth-badge">Pulse Wave</div>
+                        </div>
+                        <canvas class="chart-canvas" id="plethCanvas"></canvas>
+                    </div>
                 </section>
             </main>
 
             <!-- Footer -->
             <footer class="footer">
-                <div class="footer-info">
-                    <span>🔌 Connected Clients: <strong id="clientCount">0</strong></span>
-                    <span>⏱️ Update Rate: <strong id="updateRate">20</strong> Hz</span>
-                    <span>⏰ Runtime: <strong id="runtime">0.0</strong>s</span>
+                <div class="footer-copyright">
+                    <span>© 2026 CureCraft Medical Systems • Real-time Patient Monitoring</span>
                 </div>
             </footer>
         </div>
