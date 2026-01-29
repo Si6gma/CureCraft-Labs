@@ -2,6 +2,7 @@
 #define SIGNAL_GENERATOR_H
 
 #include <cmath>
+#include <chrono>
 
 /**
  * @brief Signal generator for medical waveforms (ECG, SpO2, Respiratory)
@@ -9,6 +10,9 @@
  * This class generates realistic medical signal waveforms for demonstration
  * and testing purposes. It's designed to be reusable by both Qt GUI and
  * web server implementations.
+ * 
+ * Uses wall-clock time to ensure all client connections see synchronized
+ * waveforms, preventing speed-up when multiple tabs are open.
  * 
  * NOTE: This is a placeholder for real hardware integration. Replace the
  * generate() methods with actual sensor readings when connecting to hardware.
@@ -38,7 +42,7 @@ public:
     SensorData generate();
 
     /**
-     * @brief Advance time by delta seconds
+     * @brief Advance time by delta seconds (deprecated - now uses wall-clock time)
      * @param dt Time delta in seconds (e.g., 0.05 for 20Hz updates)
      */
     void tick(double dt);
@@ -52,7 +56,7 @@ public:
      * @brief Get current simulation time
      * @return Current time in seconds
      */
-    double getTime() const { return time_; }
+    double getTime() const;
 
 private:
     // Waveform generation parameters (optimized for realistic medical signals)
@@ -68,7 +72,8 @@ private:
         double respAmplitude = 0.6;      // Respiratory amplitude
     } params_;
 
-    double time_ = 0.0; // Current simulation time (seconds)
+    // Wall-clock start time for synchronized signal generation
+    std::chrono::steady_clock::time_point startTime_;
 };
 
 #endif // SIGNAL_GENERATOR_H

@@ -50,7 +50,7 @@ cd CureCraft-Labs
 Install dependencies and configure the system:
 
 ```bash
-./scripts/setup.sh
+./scripts/install-dependencies.sh
 ```
 
 **What it installs:**
@@ -157,7 +157,7 @@ This ensures the service starts even when not logged in via SSH/VNC.
 
 ## Command Aliases
 
-After running `setup.sh`, these shortcuts are available:
+After running `install-dependencies.sh`, these shortcuts are available:
 
 | Alias | Full Command | Description |
 |-------|-------------|-------------|
@@ -240,7 +240,7 @@ ccache --show-stats
 If ccache isn't working:
 ```bash
 sudo apt-get install ccache
-./scripts/setup.sh
+./scripts/install-dependencies.sh
 ```
 
 ### I2C Not Working

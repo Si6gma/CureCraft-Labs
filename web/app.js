@@ -18,6 +18,14 @@ class PatientMonitor {
             reconnectDelay: 2000,        // WebSocket reconnect delay (ms)
         };
 
+        // Chart colors (updated to match new design)
+        this.chartColors = {
+            ecg: '#10b981',
+            spo2: '#a78bfa',
+            resp: '#60a5fa',
+            pleth: '#f59e0b',
+        };
+
         // Chart configurations
         this.charts = {
             ecg: {
@@ -25,58 +33,99 @@ class PatientMonitor {
                 canvas: document.getElementById('ecgCanvas'),
                 ctx: null,
                 data: { x: [], y: [] },
-                color: '#00ff88',
-                range: { min: -0.5, max: 2.0 },
+                color: this.chartColors.ecg,
+                range: { min: 0.0, max: 1.2 },  // Adjusted for realistic ECG waveform
                 visible: true,
                 container: document.getElementById('ecgContainer'),
+                lastRenderTime: 0,
+                targetFPS: 30,  // Limit to 30 FPS to prevent multi-tab speed-up
             },
             spo2: {
                 id: 'spo2',
                 canvas: document.getElementById('spo2Canvas'),
                 ctx: null,
                 data: { x: [], y: [] },
-                color: '#c850ff',
-                range: { min: 0.0, max: 1.2 },
+                color: this.chartColors.spo2,
+                range: { min: 95.0, max: 100.0 },  // SpO2 percentage range
                 visible: true,
                 container: document.getElementById('spo2Container'),
+                lastRenderTime: 0,
+                targetFPS: 30,
             },
             resp: {
                 id: 'resp',
                 canvas: document.getElementById('respCanvas'),
                 ctx: null,
                 data: { x: [], y: [] },
-                color: '#c0c0c0',
-                range: { min: -1.2, max: 1.2 },
+                color: this.chartColors.resp,
+                range: { min: 0.0, max: 1.0 },  // Adjusted for respiratory waveform (0-1 normalized)
                 visible: true,
                 container: document.getElementById('respContainer'),
+                lastRenderTime: 0,
+                targetFPS: 30,
             },
             pleth: {
                 id: 'pleth',
                 canvas: document.getElementById('plethCanvas'),
                 ctx: null,
                 data: { x: [], y: [] },
-                color: '#c850ff', // Same as SpO2
-                range: { min: 0.0, max: 1.0 },
+                color: this.chartColors.pleth,
+                range: { min: 0.0, max: 1.2 },  // Plethysmograph waveform
                 visible: true,
                 container: document.getElementById('plethContainer'),
+                lastRenderTime: 0,
+                targetFPS: 30,
             }
         };
 
-        // DOM Elements for numeric displays
+        // DOM Elements
         this.dom = {
-            bpValue: document.getElementById('bp-value'),
-            tempCavity: document.getElementById('temp-cavity-value'),
-            tempSkin: document.getElementById('temp-skin-value'),
+            // Status indicators
             statusDot: document.getElementById('statusDot'),
             statusText: document.getElementById('statusText'),
+
+            // Vital signs cards - using correct IDs from HTML
+            hrValue: document.getElementById('hrValue'),
+            hrStatus: document.getElementById('hrStatus'),
+            spo2Value: document.getElementById('spo2Value'),
+            spo2Status: document.getElementById('spo2Status'),
+            respValue: document.getElementById('respValue'),
+            respStatus: document.getElementById('respStatus'),
+            bpValue: document.getElementById('bpValue'),
+            bpStatus: document.getElementById('bpStatus'),
+            tempCoreValue: document.getElementById('tempCoreValue'),
+            tempCoreStatus: document.getElementById('tempCoreStatus'),
+            tempSkinValue: document.getElementById('tempSkinValue'),
+            tempSkinStatus: document.getElementById('tempSkinStatus'),
+
+            // Footer
             runtime: document.getElementById('runtime'),
             updateRate: document.getElementById('updateRate'),
+            dataPoints: document.getElementById('dataPoints'),
+
+            // Session
+            sessionDuration: document.getElementById('sessionDuration'),
+
+            // Buttons
+            btnLogout: document.getElementById('btnLogout'),
+            btnExport: document.getElementById('btnExport'),
         };
 
         // State
         this.eventSource = null;
         this.isConnected = false;
         this.animationFrameId = null;
+        this.sessionStartTime = Date.now();
+        this.totalDataPoints = 0;
+
+        // Vital signs thresholds
+        this.thresholds = {
+            hr: { min: 60, max: 100, critical: { min: 40, max: 150 } },
+            spo2: { min: 95, max: 100, critical: { min: 90, max: 100 } },
+            resp: { min: 12, max: 20, critical: { min: 8, max: 30 } },
+            bp_systolic: { min: 90, max: 140, critical: { min: 70, max: 180 } },
+            temp: { min: 36.5, max: 37.5, critical: { min: 35, max: 39 } },
+        };
 
         // Initialize
         this.init();
@@ -98,6 +147,9 @@ class PatientMonitor {
 
         // Start render loop
         this.startRenderLoop();
+
+        // Start session timer
+        this.startSessionTimer();
     }
 
     setupCanvas(chart) {
@@ -121,18 +173,15 @@ class PatientMonitor {
     }
 
     setupEventListeners() {
-        // Toggle buttons (if they exist)
-        const toggleIds = ['btnToggleECG', 'btnToggleSpO2', 'btnToggleResp'];
-        const signals = ['ecg', 'spo2', 'resp'];
+        // Logout button
+        if (this.dom.btnLogout) {
+            this.dom.btnLogout.addEventListener('click', () => this.handleLogout());
+        }
 
-        toggleIds.forEach((id, index) => {
-            const btn = document.getElementById(id);
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    this.toggleSignal(signals[index]);
-                });
-            }
-        });
+        // Export button
+        if (this.dom.btnExport) {
+            this.dom.btnExport.addEventListener('click', () => this.handleExport());
+        }
 
         // Window resize
         window.addEventListener('resize', () => {
@@ -142,29 +191,60 @@ class PatientMonitor {
                 }
             });
         });
-
-        // Set initial button states
-        Object.entries(this.charts).forEach(([key, chart]) => {
-            const btn = document.querySelector(`[data-signal="${key}"]`);
-            if (btn) {
-                btn.classList.add('active');
-            }
-        });
     }
 
-    toggleSignal(signalName) {
-        const chart = this.charts[signalName];
-        if (!chart) return;
-
-        // Manual toggle overrides sensor state temporarily (or just toggles visibility preference)
-        // For now, let's keep it simple: manual toggle works, but sensor update might override reasonably
-        chart.visible = !chart.visible;
-        chart.container.classList.toggle('hidden', !chart.visible);
-
-        const btn = document.querySelector(`[data-signal="${signalName}"]`);
-        if (btn) {
-            btn.classList.toggle('active', chart.visible);
+    handleLogout() {
+        if (confirm('Are you sure you want to logout?')) {
+            sessionStorage.removeItem('authenticated');
+            window.location.href = 'login.html';
         }
+    }
+
+    handleExport() {
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            session_duration: this.getSessionDuration(),
+            total_data_points: this.totalDataPoints,
+            charts: {}
+        };
+
+        // Export last 100 points from each chart
+        Object.entries(this.charts).forEach(([key, chart]) => {
+            const lastPoints = Math.min(100, chart.data.x.length);
+            exportData.charts[key] = {
+                timestamps: chart.data.x.slice(-lastPoints),
+                values: chart.data.y.slice(-lastPoints)
+            };
+        });
+
+        // Create and download file
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `curecraft-export-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        console.log('✅ Data exported successfully');
+    }
+
+    startSessionTimer() {
+        setInterval(() => {
+            if (this.dom.sessionDuration) {
+                const duration = this.getSessionDuration();
+                const minutes = Math.floor(duration / 60);
+                const seconds = duration % 60;
+                this.dom.sessionDuration.textContent =
+                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+        }, 1000);
+    }
+
+    getSessionDuration() {
+        return Math.floor((Date.now() - this.sessionStartTime) / 1000);
     }
 
     connect() {
@@ -213,84 +293,164 @@ class PatientMonitor {
     onDataReceived(data) {
         const { ecg, spo2, resp, pleth, bp_systolic, bp_diastolic, temp_cavity, temp_skin, timestamp, sensors } = data;
 
-        // Handle sensor attachment (F1 Requirement)
-        // Only show charts/data if sensor is attached
+        // Handle sensor attachment
         if (sensors) {
             this.handleSensorStatus(sensors);
         }
 
-        // Add data points to charts (only if we have data)
-        if (typeof ecg !== 'undefined') this.addDataPoint('ecg', timestamp, ecg);
-        if (typeof spo2 !== 'undefined') this.addDataPoint('spo2', timestamp, spo2);
-        if (typeof resp !== 'undefined') this.addDataPoint('resp', timestamp, resp);
-        if (typeof pleth !== 'undefined') this.addDataPoint('pleth', timestamp, pleth);
+        // Add data points to charts
+        if (typeof ecg !== 'undefined') {
+            this.addDataPoint('ecg', timestamp, ecg);
+            this.totalDataPoints++;
+        }
+        if (typeof spo2 !== 'undefined') {
+            this.addDataPoint('spo2', timestamp, spo2);
+            this.totalDataPoints++;
+        }
+        if (typeof resp !== 'undefined') {
+            this.addDataPoint('resp', timestamp, resp);
+            this.totalDataPoints++;
+        }
+        if (typeof pleth !== 'undefined') {
+            this.addDataPoint('pleth', timestamp, pleth);
+            this.totalDataPoints++;
+        }
 
-        // Update numeric displays
-        this.updateNumericDisplays(data);
+        // Update vital signs summary cards
+        this.updateVitalSigns(data);
 
         // Update footer
         this.updateFooter(timestamp);
     }
 
     handleSensorStatus(sensors) {
-        // This function ensures F1 requirement: display only when sensor attached/detected
-
-        // ECG
+        // Show/hide charts based on sensor attachment
         this.updateChartVisibility('ecg', sensors.ecg);
-
-        // SpO2 + Pleth (both depend on SpO2 sensor)
         this.updateChartVisibility('spo2', sensors.spo2);
-        this.updateChartVisibility('pleth', sensors.spo2);
-
-        // Respiratory (always derived/available or depends on sensors)
-        // For requirement compliance, let's say it depends on resp sensor
+        this.updateChartVisibility('pleth', sensors.spo2);  // Pleth depends on SpO2 sensor
         this.updateChartVisibility('resp', sensors.resp);
-
-        // We could also gray out numeric displays if sensors are missing
-        // For now, let's leave them updating as "--" if needed, handled in updateNumericDisplays
     }
 
     updateChartVisibility(chartName, isAttached) {
         const chart = this.charts[chartName];
         if (!chart) return;
 
-        // Show/hide based on sensor attachment
-        // We only change visibility if it differs from current intent
-        // Note: Manual toggles might conflict here. Let's say sensor attachment is the master switch.
+        chart.visible = isAttached;
+        chart.container.classList.toggle('hidden', !isAttached);
+    }
 
-        if (chart.visible !== isAttached) {
-            chart.visible = isAttached;
-            chart.container.classList.toggle('hidden', !isAttached);
+    updateVitalSigns(data) {
+        // Calculate and update heart rate (from ECG peaks)
+        const hr = this.calculateHeartRate();
+        if (hr > 0 && this.dom.hrValue) {
+            this.updateVitalCard('hr', hr, this.thresholds.hr);
+        }
 
-            // Update toggle button if exists
-            const btn = document.querySelector(`[data-signal="${chartName}"]`);
-            if (btn) {
-                btn.classList.toggle('active', isAttached);
+        // Update SpO2 percentage (backend sends percentage directly, not normalized)
+        if (typeof data.spo2 !== 'undefined' && this.dom.spo2Value) {
+            const spo2Percent = Math.round(data.spo2);  // Already a percentage (96-99)
+            this.updateVitalCard('spo2', spo2Percent, this.thresholds.spo2);
+        }
+
+        // Calculate respiratory rate
+        const respRate = this.calculateRespiratoryRate();
+        if (respRate > 0 && this.dom.respValue) {
+            this.updateVitalCard('resp', respRate, this.thresholds.resp);
+        }
+
+        // Update blood pressure
+        if (this.dom.bpValue) {
+            if (data.sensors && data.sensors.nibp && typeof data.bp_systolic !== 'undefined') {
+                const sys = data.bp_systolic.toFixed(0);
+                const dia = data.bp_diastolic.toFixed(0);
+                this.dom.bpValue.textContent = `${sys}/${dia}`;
+                this.updateVitalStatus('bp', data.bp_systolic, this.thresholds.bp_systolic);
+            } else {
+                this.dom.bpValue.textContent = '--/--';
+                this.updateVitalStatus('bp', null);
+            }
+        }
+
+        // Update temperatures
+        if (this.dom.tempCoreValue && this.dom.tempSkinValue) {
+            if (data.sensors && data.sensors.temp && typeof data.temp_cavity !== 'undefined') {
+                this.updateVitalCard('tempCore', data.temp_cavity, this.thresholds.temp);
+                this.updateVitalCard('tempSkin', data.temp_skin, this.thresholds.temp);
+            } else {
+                this.dom.tempCoreValue.textContent = '--.-';
+                this.dom.tempSkinValue.textContent = '--.-';
+                this.updateVitalStatus('tempCore', null);
+                this.updateVitalStatus('tempSkin', null);
             }
         }
     }
 
-    updateNumericDisplays(data) {
-        // NIBP
-        if (data.sensors && data.sensors.nibp) {
-            this.dom.bpValue.textContent = `${data.bp_systolic.toFixed(0)}/${data.bp_diastolic.toFixed(0)}`;
-        } else {
-            this.dom.bpValue.textContent = '--/--';
+    updateVitalCard(name, value, thresholds) {
+        const valueEl = this.dom[`${name}Value`];
+        if (valueEl) {
+            valueEl.textContent = typeof value === 'number' ? Math.round(value) : value;
+        }
+        this.updateVitalStatus(name, value, thresholds);
+    }
+
+    updateVitalStatus(name, value, thresholds) {
+        const statusEl = this.dom[`${name}Status`];
+        if (!statusEl) return;
+
+        if (value === null || value === undefined) {
+            statusEl.textContent = 'No Sensor';
+            statusEl.className = 'vital-card-status warning';
+            return;
         }
 
-        // Temperature (Core)
-        if (data.sensors && data.sensors.temp) {
-            this.dom.tempCavity.textContent = data.temp_cavity.toFixed(1);
-        } else {
-            this.dom.tempCavity.textContent = '--.-';
+        if (thresholds) {
+            if (value < thresholds.critical.min || value > thresholds.critical.max) {
+                statusEl.textContent = 'Critical';
+                statusEl.className = 'vital-card-status critical';
+            } else if (value < thresholds.min || value > thresholds.max) {
+                statusEl.textContent = 'Warning';
+                statusEl.className = 'vital-card-status warning';
+            } else {
+                statusEl.textContent = 'Normal';
+                statusEl.className = 'vital-card-status normal';
+            }
+        }
+    }
+
+    calculateHeartRate() {
+        // Simple peak detection on ECG data (last 2 seconds)
+        const chart = this.charts.ecg;
+        if (!chart || chart.data.x.length < 40) return 0;
+
+        const data = chart.data.y.slice(-40);  // Last 2 seconds at 20Hz
+        const threshold = 0.5;
+        let peaks = 0;
+
+        for (let i = 1; i < data.length - 1; i++) {
+            if (data[i] > threshold && data[i] > data[i - 1] && data[i] > data[i + 1]) {
+                peaks++;
+            }
         }
 
-        // Temperature (Skin)
-        if (data.sensors && data.sensors.temp) {
-            this.dom.tempSkin.textContent = data.temp_skin.toFixed(1);
-        } else {
-            this.dom.tempSkin.textContent = '--.-';
+        return Math.round(peaks * 30);  // Convert to bpm (2 sec * 30 = 60 sec)
+    }
+
+    calculateRespiratoryRate() {
+        // Simple peak detection on respiratory data (last 10 seconds)
+        const chart = this.charts.resp;
+        if (!chart || chart.data.x.length < 200) return 0;
+
+        const data = chart.data.y.slice(-200);  // Last 10 seconds at 20Hz
+        const threshold = 0.2;
+        let peaks = 0;
+
+        for (let i = 1; i < data.length - 1; i++) {
+            if (data[i] > threshold && data[i] > data[i - 1] && data[i] > data[i + 1]) {
+                peaks++;
+            }
         }
+
+        return Math.round(peaks * 6);  // Convert to breaths per minute
     }
 
     addDataPoint(chartName, x, y) {
@@ -309,17 +469,24 @@ class PatientMonitor {
     }
 
     startRenderLoop() {
-        const render = () => {
+        const render = (timestamp) => {
             Object.values(this.charts).forEach(chart => {
                 if (chart.visible && chart.data.x.length > 0 && chart.canvas) {
-                    this.renderChart(chart);
+                    // Timestamp-based frame limiting to prevent multi-tab speed-up
+                    const deltaTime = timestamp - chart.lastRenderTime;
+                    const targetInterval = 1000 / chart.targetFPS;  // ms per frame
+
+                    if (deltaTime >= targetInterval) {
+                        chart.lastRenderTime = timestamp;
+                        this.renderChart(chart);
+                    }
                 }
             });
 
             this.animationFrameId = requestAnimationFrame(render);
         };
 
-        render();
+        render(performance.now());
     }
 
     renderChart(chart) {
@@ -328,7 +495,7 @@ class PatientMonitor {
         const height = chart.height;
 
         // Clear canvas
-        ctx.fillStyle = '#0a0a0a';
+        ctx.fillStyle = '#0a0e1a';
         ctx.fillRect(0, 0, width, height);
 
         // Get visible data range
@@ -350,8 +517,6 @@ class PatientMonitor {
 
         let firstPoint = true;
 
-        // Optimization: Binary search for start index could be added here
-        // For < 1000 points, linear scan is fine on modern JS engines
         for (let i = 0; i < data.x.length; i++) {
             const time = data.x[i];
             const value = data.y[i];
@@ -421,6 +586,11 @@ class PatientMonitor {
         // Update rate display
         if (this.dom.updateRate) {
             this.dom.updateRate.textContent = this.config.updateRate;
+        }
+
+        // Update data points
+        if (this.dom.dataPoints) {
+            this.dom.dataPoints.textContent = this.totalDataPoints.toLocaleString();
         }
     }
 }

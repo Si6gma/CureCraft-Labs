@@ -2,7 +2,6 @@
 set -euo pipefail
 
 # CureCraft-Labs Dependency Setup Script for Raspberry Pi
-# Install build tools and Qt libraries
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 info() { echo "INFO: $*"; }
@@ -23,7 +22,7 @@ sudo apt-get install -y \
 
 # Configure ccache for optimal performance
 info "Configuring ccache..."
-ccache --max-size=2G  # 2GB cache is sufficient for this project
+ccache --max-size=2G
 ccache --set-config=compression=true
 ccache --set-config=compression_level=6
 
@@ -44,9 +43,6 @@ mkdir -p "$HOME/bin"
 # Create symlinks for quick access
 SCRIPT_DIR="$HOME/Code/CureCraft-Labs/scripts"
 
-ln -sf "${SCRIPT_DIR}/logs.sh" "$HOME/bin/logs"
-ln -sf "${SCRIPT_DIR}/logs-clear.sh" "$HOME/bin/logs-clear"
-ln -sf "${SCRIPT_DIR}/status.sh" "$HOME/bin/status"
 ln -sf "${SCRIPT_DIR}/deploy.sh" "$HOME/bin/deploy"
 
 # Make sure ~/bin is in PATH
@@ -58,9 +54,6 @@ fi
 source "$HOME/.bashrc"
 
 info "Command aliases created:"
-info "  logs        - View live service logs"
-info "  logs-clear  - Clear journal logs"
-info "  status      - Check service status"
 info "  deploy      - Update and deploy"
 
 info "Dependencies installed successfully!"

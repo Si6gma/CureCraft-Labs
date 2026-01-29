@@ -771,3 +771,230 @@ This technical design demonstrates:
 - MISRA-C++ compliance
 
 This architecture is production-ready, maintainable, extensible, and testable.
+
+---
+
+## API Endpoints
+
+### Web Server HTTP API
+
+| Endpoint | Method | Description | Request | Response |
+|----------|--------|-------------|---------|----------|
+| `/` | GET | Serve dashboard UI | - | `text/html` |
+| `/login.html` | GET | Serve login page | - | `text/html` |
+| `/api/login` | POST | Authenticate user | `{username, password}` | `{success: bool, error?: string}` |
+| `/api/logout` | POST | End session | - | `{success: bool}` |
+| `/api/sensors` | GET | Get sensor status | - | `{sensors: [{type, attached, lastValue}]}` |
+| `/api/status` | GET | Server health check | - | `{running: bool, uptime: number, clients: number}` |
+| `/api/brightness` | POST | Set screen brightness (Pi only) | `{brightness: number}` | `{success: bool}` |
+| `/ws` | GET | Real-time data stream (SSE) | - | Server-Sent Events stream |
+
+### SSE Data Format
+
+```json
+{
+  "ecg": 0.5234,
+  "spo2": 98,
+  "resp": 0.3421,
+  "pleth": 0.8765,
+  "bp_systolic": 120,
+  "bp_diastolic": 80,
+  "temp_cavity": 37.2,
+  "temp_skin": 36.8,
+  "timestamp": 1234.567,
+  "sensors": {
+    "ecg": {"attached": true},
+    "spo2": {"attached": true},
+    "tempCore": {"attached": true},
+    "tempSkin": {"attached": false},
+    "nibp": {"attached": true}
+  }
+}
+```
+
+---
+
+## Build Configuration
+
+### Compiler Optimizations
+
+```cmake
+# CMakeLists.txt optimizations for Raspberry Pi
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -ffast-math -flto")
+```
+
+**Flags explained:**
+- `-O3` - Maximum optimization level
+- `-march=native` - Use Pi 400 CPU features (ARMv8-A)
+- `-ffast-math` - Fast floating-point operations
+- `-flto` - Link-time optimization (whole program optimization)
+
+### Build Caching
+
+Uses **ccache** for faster incremental builds:
+```bash
+# First build: 8-10 minutes
+# Incremental: 5-30 seconds
+```
+
+### Build Targets
+
+```bash
+# Production build (optimized)
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+
+# Debug build (with symbols)
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+
+# Mock mode (no hardware)
+./build/curecraft --mock
+
+# Production mode
+./build/curecraft
+```
+
+---
+
+## Performance Metrics
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| **Build Time (first)** | 8-10 min | Full compilation w/ optimization |
+| **Build Time (incremental)** | 5-30 sec | With ccache enabled |
+| **Frame Rate** | 20 FPS | Canvas rendering rate |
+| **Update Interval** | 50 ms | Data stream from backend |
+| **Memory Usage** | ~50 MB | RSS (resident set size) |
+| **CPU Usage** | ~15% | Single core (Pi 400 @ 1.8 GHz) |
+| **Network Bandwidth** | ~10 KB/s | Per SSE connection |
+| **Sensor Scan Rate** | 3 sec | Hot-plug detection interval |
+
+---
+
+## Command Reference
+
+### Development Commands
+
+```bash
+# Mock mode (development)
+./scripts/run-mock.sh
+
+# Production mode
+./scripts/run-production.sh
+
+# Build only
+cmake --build build
+
+# Clean build
+rm -rf build && cmake -B build && cmake --build build
+```
+
+### Raspberry Pi Commands
+
+After running `./scripts/install-dependencies.sh`, use these aliases:
+
+```bash
+# Deployment
+deploy          # Pull, build, restart service
+
+# Service control
+systemctl --user start curecraft.service
+systemctl --user stop curecraft.service
+systemctl --user restart curecraft.service
+systemctl --user status curecraft.service
+
+# Logs
+journalctl --user -u curecraft.service -f     # Follow logs
+journalctl --user -u curecraft.service --since "1 hour ago"
+```
+
+---
+
+## Testing
+
+### Manual Testing
+
+1. **Mock Mode (No Hardware):**
+   ```bash
+   ./scripts/run-mock.sh
+   # Open http://localhost:8080
+   # Verify all waveforms render
+   ```
+
+2. **Multi-Tab Test:**
+   ```bash
+   # Open multiple browser tabs
+   # Verify waveforms stay synchronized
+   # Verify no speed-up occurs
+   ```
+
+3. **Sensor Hot-Plug (Pi Only):**
+   ```bash
+   # Disconnect sensor
+   # Verify chart hides in UI
+   # Reconnect sensor
+   # Verify chart reappears
+   ```
+
+### Diagnostic Tools
+
+```bash
+# I2C bus scan
+cd tests/diagnostics
+./test_i2c_scan.sh
+
+# Check if sensors are detected
+curl http://localhost:8080/api/sensors
+```
+
+---
+
+## Troubleshooting
+
+### Build Issues
+
+**CMake not found:**
+```bash
+# Mac
+brew install cmake
+
+# Raspberry Pi
+sudo apt install cmake
+```
+
+**Compilation errors:**
+```bash
+# Clean rebuild
+rm -rf build
+cmake -B build
+cmake --build build
+```
+
+### Runtime Issues
+
+**Port 8080 already in use:**
+```bash
+# Find and kill process
+lsof -ti:8080 | xargs kill -9
+
+# Or use different port
+./build/curecraft --port 8081
+```
+
+**I2C permission denied (Pi):**
+```bash
+# Add user to i2c group
+sudo usermod -a -G i2c $USER
+# Logout and login again
+```
+
+**Sensors not detected:**
+```bash
+# Check I2C bus
+i2cdetect -y 1
+
+# Check logs
+journalctl --user -u curecraft.service -n 50
+```
+

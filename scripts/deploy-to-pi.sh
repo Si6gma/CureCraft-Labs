@@ -76,8 +76,6 @@ fi
 # Install and start the systemd service
 # "${REPO_DIR}/scripts/setup-service.sh"
 
-"${REPO_DIR}/scripts/start-curecraft.sh"
+"${REPO_DIR}/scripts/run-production.sh"
 
 echo "=== Done ==="
-echo "View logs: journalctl --user -u curecraft.service -f"
-

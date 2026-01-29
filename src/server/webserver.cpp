@@ -106,15 +106,30 @@ void WebServer::serverThread()
         std::cout << "Request: " << req.method << " " << req.path << " -> " << res.status << std::endl;
     });
 
-    // Serve static files from web directory (configured later to allow API routes priority)
+    // Enable CORS for all endpoints
+    server_->set_default_headers({
+        {"Access-Control-Allow-Origin", "*"},
+        {"Access-Control-Allow-Methods", "GET, POST, OPTIONS"},
+        {"Access-Control-Allow-Headers", "Content-Type"}
+    });
+
+    // Handle OPTIONS preflight requests
+    server_->Options("/.*", [](const httplib::Request&, httplib::Response& res) {
+        res.status = 204;
+    });
+    
     
     server_->Post("/api/login", [this](const httplib::Request& req, httplib::Response& res) {
+        std::cout << "[API] Login request received from " << req.remote_addr << std::endl;
+        std::cout << "[API] Request body: " << req.body << std::endl;
+        
         std::string body = req.body;
         
         size_t userPos = body.find("\"username\":\"");
         size_t passPos = body.find("\"password\":\"");
         
         if (userPos == std::string::npos || passPos == std::string::npos) {
+            std::cout << "[API] Login failed: Invalid request format" << std::endl;
             res.set_content("{\"success\":false,\"error\":\"Invalid request\"}", "application/json");
             res.status = 400;
             return;
@@ -129,14 +144,24 @@ void WebServer::serverThread()
         std::string username = body.substr(userPos, userEnd - userPos);
         std::string password = body.substr(passPos, passEnd - passPos);
         
+        std::cout << "[API] Login attempt - username: " << username << std::endl;
+        
         bool valid = Authentication::validateLogin(username, password);
         
         if (valid) {
+            std::cout << "[API] Login successful!" << std::endl;
             res.set_content("{\"success\":true}", "application/json");
         } else {
+            std::cout << "[API] Login failed: Invalid credentials" << std::endl;
             res.set_content("{\"success\":false,\"error\":\"Invalid credentials\"}", "application/json");
             res.status = 401;
         }
+    });
+    
+    // Logout endpoint
+    server_->Post("/api/logout", [this](const httplib::Request& req, httplib::Response& res) {
+        std::cout << "[API] Logout request received from " << req.remote_addr << std::endl;
+        res.set_content("{\"success\":true}", "application/json");
     });
     
     // Sensor status endpoint
@@ -204,8 +229,17 @@ void WebServer::serverThread()
         return "text/plain";
     };
 
+    // Serve static files - but NOT for /api paths (let those 404 if not explicitly handled)
     server_->Get("/.*", [this, getMimeType](const httplib::Request& req, httplib::Response& res) {
         std::string path = req.path;
+        
+        // Skip /api paths - they should be handled by explicit API handlers above
+        if (path.find("/api/") == 0) {
+            res.status = 404;
+            res.set_content("{\"error\":\"API endpoint not found\"}", "application/json");
+            return;
+        }
+        
         if (path == "/") path = "/index.html";
         
         if (path.find("..") != std::string::npos) {
