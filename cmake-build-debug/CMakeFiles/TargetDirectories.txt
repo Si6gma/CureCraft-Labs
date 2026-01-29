@@ -1,7 +1,0 @@
-/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/curecraft.dir
-/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/list_install_components.dir
-/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/install.dir
-/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/install/local.dir
-/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/install/strip.dir
