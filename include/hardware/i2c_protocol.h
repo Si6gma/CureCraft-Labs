@@ -4,17 +4,16 @@
 #include <cstdint>
 
 /**
- * @brief I2C Protocol Definitions for SensorHub Communication
- *
- * This protocol defines the communication between Raspberry Pi (I2C master)
- * and SAMD21 SensorHub (I2C slave at address 0x08).
- *
- * The SAMD21 hub multiplexes sensor access across multiple I2C buses.
- *
- * AUTOMATIC SENSOR DETECTION:
- * The hub automatically scans for connected sensors every 5 seconds and
- * maintains a cached status byte. When Pi sends SCAN_SENSORS command,
- * the hub returns the most recent cached status (no additional I2C scan).
+ * @file i2c_protocol.h
+ * @brief I2C Protocol for SensorHub Communication
+ * @version 1.0
+ * 
+ * Protocol for communication between Raspberry Pi (I2C master) and SAMD21
+ * SensorHub (I2C slave at 0x08). The hub multiplexes sensor access across
+ * multiple I2C buses and provides automatic sensor detection.
+ * 
+ * The hub scans for sensors every 5 seconds and caches status. Commands
+ * return cached data without triggering additional I2C transactions.
  */
 
 // ============================================================================

@@ -4,6 +4,12 @@
 #include <atomic>
 #include "server/webserver.h"
 
+namespace {
+    constexpr int DEFAULT_PORT = 8080;
+    constexpr const char* DEFAULT_WEB_ROOT = "./web";
+    constexpr const char* FALLBACK_WEB_ROOT = "../web";
+}
+
 std::atomic<bool> shutdownRequested(false);
 
 void signalHandler(int signal)
@@ -20,9 +26,8 @@ int main(int argc, char* argv[])
     std::cout << "============================================" << std::endl;
     std::cout << std::endl;
 
-    // Parse command line arguments
-    int port = 8080;
-    std::string webRoot = "./web";
+    int port = DEFAULT_PORT;
+    std::string webRoot = DEFAULT_WEB_ROOT;
     bool mockSensors = false;
     
     for (int i = 1; i < argc; ++i) {
@@ -48,19 +53,16 @@ int main(int argc, char* argv[])
         }
     }
 
-    // Smart default: If default ./web doesn't exist, try ../web (common when running from build dir)
-    if (webRoot == "./web" && access(webRoot.c_str(), F_OK) != 0) {
-        if (access("../web", F_OK) == 0) {
-            webRoot = "../web";
+    if (webRoot == DEFAULT_WEB_ROOT && access(webRoot.c_str(), F_OK) != 0) {
+        if (access(FALLBACK_WEB_ROOT, F_OK) == 0) {
+            webRoot = FALLBACK_WEB_ROOT;
             std::cout << "Notice: Default ./web not found, using ../web" << std::endl;
         }
     }
 
-    // Set up signal handlers for graceful shutdown
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 
-    // Create and start web server
     WebServer server(port, webRoot, mockSensors);
     server.start();
 
@@ -70,12 +72,10 @@ int main(int argc, char* argv[])
     std::cout << "⌨️  Press Ctrl+C to stop" << std::endl;
     std::cout << std::endl;
 
-    // Keep main thread alive until shutdown requested
     while (!shutdownRequested) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    // Graceful shutdown
     std::cout << "Stopping server..." << std::endl;
     server.stop();
     

@@ -10,8 +10,15 @@
 #include <thread>
 #include <iomanip>
 
+namespace {
+    constexpr int DEFAULT_PORT = 8080;
+    constexpr int DEFAULT_UPDATE_RATE_HZ = 20;
+    constexpr int MAX_UPDATE_RATE_HZ = 120;
+    constexpr int SENSOR_SCAN_INTERVAL_SEC = 3;
+}
+
 WebServer::WebServer(int port, const std::string& webRoot, bool mockSensors)
-    : port_(port), webRoot_(webRoot), running_(false), updateRateHz_(20), mockMode_(mockSensors)
+    : port_(port), webRoot_(webRoot), running_(false), updateRateHz_(DEFAULT_UPDATE_RATE_HZ), mockMode_(mockSensors)
 {
     // Initialize sensor manager
     sensorMgr_ = std::make_unique<SensorManager>(mockMode_);
@@ -29,7 +36,6 @@ void WebServer::start()
         return;
     }
 
-    // Initialize sensor manager
     if (!sensorMgr_->initialize()) {
         std::cerr << "Warning: Sensor manager initialization failed, continuing in degraded mode" << std::endl;
     }
@@ -43,7 +49,6 @@ void WebServer::start()
     // Launch data streaming thread
     dataThreadHandle_ = std::make_unique<std::thread>(&WebServer::dataStreamThread, this);
     
-    // Launch sensor scanning thread (for hot-plug detection)
     sensorScanThreadHandle_ = std::make_unique<std::thread>(&WebServer::sensorScanThread, this);
     
     std::cout << "🌐 Web Server started on http://localhost:" << port_ << std::endl;
@@ -62,27 +67,18 @@ void WebServer::stop()
     running_ = false;
     shutdownCv_.notify_all();
     
-    // Stop the HTTP server to unblock the listener
     if (server_) {
-        std::cout << "[WebServer] Stopping HTTP listener..." << std::endl;
         server_->stop();
     }
     
-    // Wait for threads to finish
     if (serverThreadHandle_ && serverThreadHandle_->joinable()) {
-        std::cout << "[WebServer] Joining server thread..." << std::endl;
         serverThreadHandle_->join();
-        std::cout << "[WebServer] Server thread joined." << std::endl;
     }
     if (dataThreadHandle_ && dataThreadHandle_->joinable()) {
-        std::cout << "[WebServer] Joining data thread..." << std::endl;
         dataThreadHandle_->join();
-        std::cout << "[WebServer] Data thread joined." << std::endl;
     }
     if (sensorScanThreadHandle_ && sensorScanThreadHandle_->joinable()) {
-        std::cout << "[WebServer] Joining sensor scan thread..." << std::endl;
         sensorScanThreadHandle_->join();
-        std::cout << "[WebServer] Sensor scan thread joined." << std::endl;
     }
     
     std::cout << "[WebServer] Server stopped cleanly" << std::endl;
@@ -90,7 +86,7 @@ void WebServer::stop()
 
 void WebServer::setUpdateRate(int hz)
 {
-    if (hz > 0 && hz <= 120) {
+    if (hz > 0 && hz <= MAX_UPDATE_RATE_HZ) {
         updateRateHz_ = hz;
         std::cout << "Update rate set to " << hz << " Hz" << std::endl;
     }
@@ -112,12 +108,9 @@ void WebServer::serverThread()
 
     // Serve static files from web directory (configured later to allow API routes priority)
     
-    // Login endpoint
     server_->Post("/api/login", [this](const httplib::Request& req, httplib::Response& res) {
-        // Parse JSON body (simple parsing for username/password)
         std::string body = req.body;
         
-        // Extract username and password (simple parsing, not production-ready!)
         size_t userPos = body.find("\"username\":\"");
         size_t passPos = body.find("\"password\":\"");
         
@@ -152,10 +145,7 @@ void WebServer::serverThread()
         res.set_content(json, "application/json");
     });
     
-    // Brightness control endpoint  
     server_->Post("/api/brightness", [this](const httplib::Request& req, httplib::Response& res) {
-        // In a real implementation, this would control screen brightness
-        // For now, just acknowledge the request
         std::cout << "[API] Brightness change requested: " << req.body << std::endl;
         res.set_content("{\"success\":true}", "application/json");
     });
@@ -214,12 +204,10 @@ void WebServer::serverThread()
         return "text/plain";
     };
 
-    // Serve static files manually to ensure API POST requests aren't shadowed by mount point
     server_->Get("/.*", [this, getMimeType](const httplib::Request& req, httplib::Response& res) {
         std::string path = req.path;
         if (path == "/") path = "/index.html";
         
-        // Prevent directory traversal
         if (path.find("..") != std::string::npos) {
             res.status = 403;
             return;
@@ -234,7 +222,6 @@ void WebServer::serverThread()
             res.set_content(buffer.str(), getMimeType(path));
         } else {
             res.status = 404;
-            // Only log if not looking for favicon (reduce noise)
             if (path.find("favicon.ico") == std::string::npos) {
                 std::cerr << "File not found: " << fullPath << std::endl;
             }
@@ -262,22 +249,18 @@ void WebServer::dataStreamThread()
 
 void WebServer::sensorScanThread()
 {
-    // This thread periodically rescans for sensors (hot-plug detection)
-    std::cout << "[WebServer] Sensor hot-plug detection enabled (scans every 3 seconds)" << std::endl;
-    std::cout.flush();
+    std::cout << "[WebServer] Sensor hot-plug detection enabled (scans every " << SENSOR_SCAN_INTERVAL_SEC << " seconds)" << std::endl;
     
     while (running_) {
-        // Wait 3 seconds (gives SAMD21 time to complete scan)
         {
             std::unique_lock<std::mutex> lock(shutdownMutex_);
-            if (shutdownCv_.wait_for(lock, std::chrono::seconds(3), [this]{ return !running_; })) {
+            if (shutdownCv_.wait_for(lock, std::chrono::seconds(SENSOR_SCAN_INTERVAL_SEC), [this]{ return !running_; })) {
                 break;
             }
         }
         
         if (!running_) break;
         
-        // Rescan for sensors
         sensorMgr_->scanSensors();
     }
 }

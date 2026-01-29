@@ -1,16 +1,17 @@
 #include "hardware/sensor_manager.h"
 #include <iostream>
-#include <iomanip>
 #include <sstream>
 #include <bitset>
-#include <thread>
-#include <chrono>
+
+namespace {
+    constexpr int I2C_BUS_NUMBER = 1;
+    constexpr int HUB_PROCESS_DELAY_MS = 50;
+}
 
 SensorManager::SensorManager(bool mockMode)
     : mockMode_(mockMode)
 {
-    // Pi 400 I2C bus 1 (GPIO 2/3 - where SAMD21 is connected)
-    i2c_ = std::make_unique<I2CDriver>(1, mockMode);
+    i2c_ = std::make_unique<I2CDriver>(I2C_BUS_NUMBER, mockMode);
     initializeSensorMap();
 }
 
@@ -79,8 +80,6 @@ int SensorManager::scanSensors()
     std::cout << "[SensorMgr] Requesting sensor scan from hub..." << std::endl;
     std::cout.flush();
 
-    // Use the proper protocol: send SCAN_SENSORS command and get status byte
-    // The hub automatically scans every 5s and caches the result
     uint8_t statusByte = i2c_->scanSensors();
 
     if (statusByte == 0xFF)
@@ -97,7 +96,6 @@ int SensorManager::scanSensors()
     std::cout << "[SensorMgr] Status byte: 0b" << std::bitset<8>(statusByte) << std::endl;
     std::cout.flush();
 
-    // Parse status byte according to firmware bit assignments
     using namespace SensorStatusBits;
 
     bool ecgDetected = (statusByte & ECG) != 0;
@@ -184,9 +182,6 @@ bool SensorManager::isSensorAttached(SensorType type) const
 
 bool SensorManager::readSensor(SensorType type, float &value)
 {
-    // Sensors are only for presence detection
-    // All data comes from the signal generator
-    // Just return true if sensor is attached
     auto it = sensors_.find(type);
     if (it == sensors_.end())
     {
@@ -210,7 +205,6 @@ const SensorInfo &SensorManager::getSensorInfo(SensorType type) const
 
 std::string SensorManager::getSensorStatusJson() const
 {
-    // FORCE ALL SENSORS TO TRUE (Ignore detection)
     std::ostringstream json;
     json << "{";
     json << "\"ecg\":true,";
