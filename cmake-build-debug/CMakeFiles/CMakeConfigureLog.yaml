@@ -386,3 +386,29 @@ events:
         
       exitCode: 0
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/Applications/CLion.app/Contents/bin/cmake/mac/aarch64/share/cmake-3.29/Modules/CheckIPOSupported.cmake:138 (try_compile)"
+      - "/Applications/CLion.app/Contents/bin/cmake/mac/aarch64/share/cmake-3.29/Modules/CheckIPOSupported.cmake:266 (_ipo_run_language_check)"
+      - "CMakeLists.txt:34 (check_ipo_supported)"
+    directories:
+      source: "/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/_CMakeLTOTest-CXX/src"
+      binary: "/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/_CMakeLTOTest-CXX/bin"
+    buildResult:
+      variable: "_IPO_LANGUAGE_CHECK_RESULT"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/_CMakeLTOTest-CXX/bin'
+        
+        Run Build Command(s): /Applications/CLion.app/Contents/bin/ninja/mac/aarch64/ninja -v
+        [1/4] /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++   -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fcolor-diagnostics -MD -MT CMakeFiles/boo.dir/main.cpp.o -MF CMakeFiles/boo.dir/main.cpp.o.d -o CMakeFiles/boo.dir/main.cpp.o -c /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/_CMakeLTOTest-CXX/src/main.cpp
+        [2/4] /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++   -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -fcolor-diagnostics -MD -MT CMakeFiles/foo.dir/foo.cpp.o -MF CMakeFiles/foo.dir/foo.cpp.o.d -o CMakeFiles/foo.dir/foo.cpp.o -c /Users/yalukaiwo/Documents/ESE/CureCraft-Labs/cmake-build-debug/CMakeFiles/_CMakeLTOTest-CXX/src/foo.cpp
+        [3/4] : && /Applications/CLion.app/Contents/bin/cmake/mac/aarch64/bin/cmake -E rm -f libfoo.a && "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar" qc libfoo.a  CMakeFiles/foo.dir/foo.cpp.o && "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib" libfoo.a && /Applications/CLion.app/Contents/bin/cmake/mac/aarch64/bin/cmake -E touch libfoo.a && :
+        [4/4] : && /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ -flto=thin -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/boo.dir/main.cpp.o -o boo  libfoo.a && :
+        
+      exitCode: 0
+...
