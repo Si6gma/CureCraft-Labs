@@ -11,6 +11,7 @@
 CureCraft is a **web-based patient monitoring system** that runs on Raspberry Pi. It displays real-time medical waveforms (ECG, SpO2, respiratory rate, temperature) through any web browser—no special software needed.
 
 **Key Features:**
+
 - 🏥 Real-time medical signal visualization (ECG, SpO2, breathing, temperature, blood pressure)
 - 🌐 Access from any device with a browser
 - 🔌 Automatic sensor detection (hot-plug support)
@@ -99,16 +100,19 @@ CureCraft-Labs/
 ## Development
 
 **Local testing (no hardware):**
+
 ```bash
 ./scripts/run-mock.sh
 ```
 
 **On Raspberry Pi:**
+
 ```bash
 ./scripts/run-production.sh
 ```
 
 **Making changes:**
+
 ```bash
 # Edit code in src/ or web/
 # Rebuild and test
@@ -120,11 +124,11 @@ cmake --build build
 
 ## Documentation
 
-| Document | Purpose |
-|----------|---------|
-| [README.md](README.md) | Overview & quick start (this file) |
-| [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md) | Architecture, API, design patterns |
-| [RASPBERRY_PI_SETUP.md](RASPBERRY_PI_SETUP.md) | Pi deployment & configuration |
+| Document                                       | Purpose                            |
+| ---------------------------------------------- | ---------------------------------- |
+| [README.md](README.md)                         | Overview & quick start (this file) |
+| [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)     | Architecture, API, design patterns |
+| [RASPBERRY_PI_SETUP.md](RASPBERRY_PI_SETUP.md) | Pi deployment & configuration      |
 
 ---
 
