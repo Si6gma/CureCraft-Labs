@@ -186,12 +186,12 @@ sequenceDiagram
     User->>Main: Start application
     Main->>Main: Parse command line args
     Main->>Main: Setup signal handlers
-    
+
     Main->>WebServer: new WebServer(port, webRoot, mockMode)
     WebServer->>SensorManager: new SensorManager(mockMode)
     SensorManager->>I2CDriver: new I2CDriver(bus=1, mockMode)
     WebServer->>SignalGenerator: new SignalGenerator()
-    
+
     Main->>WebServer: start()
     WebServer->>SensorManager: initialize()
     SensorManager->>I2CDriver: open()
@@ -201,12 +201,12 @@ sequenceDiagram
     SensorManager->>I2CDriver: scanSensors()
     I2CDriver-->>SensorManager: status byte
     SensorManager->>SensorManager: Update sensor map
-    
+
     WebServer->>WebServer: Launch serverThread()
     WebServer->>WebServer: Launch dataStreamThread()
     WebServer->>WebServer: Launch sensorScanThread()
     WebServer->>HttpLib: listen(port)
-    
+
     WebServer-->>Main: Server started
     Main->>User: Display "Server running on port 8080"
 ```
@@ -219,23 +219,23 @@ sequenceDiagram
     participant WebServer
     participant SignalGenerator
     participant SensorManager
-    
+
     Browser->>WebServer: GET /ws (SSE connection)
     activate WebServer
-    
+
     loop Every 50ms (20Hz)
         WebServer->>SignalGenerator: generate()
         SignalGenerator-->>WebServer: SensorData
-        
+
         WebServer->>SensorManager: getSensorStatusJson()
         SensorManager-->>WebServer: sensor status JSON
-        
+
         WebServer->>WebServer: generateJsonData()
         WebServer->>Browser: SSE: data: {json}
-        
+
         WebServer->>SignalGenerator: tick(0.05)
     end
-    
+
     deactivate WebServer
 ```
 
@@ -248,30 +248,30 @@ sequenceDiagram
     participant I2CDriver
     participant SAMD21 Hub
     participant Physical Sensor
-    
+
     loop Every 3 seconds
         SensorScanThread->>SensorManager: scanSensors()
         activate SensorManager
-        
+
         SensorManager->>I2CDriver: scanSensors()
         activate I2CDriver
-        
+
         I2CDriver->>SAMD21 Hub: Send SCAN_SENSORS (0x01)
-        
+
         Note over SAMD21 Hub: Hub has auto-scanned<br/>every 5s in background
-        
+
         SAMD21 Hub-->>I2CDriver: Status byte (cached)
         I2CDriver-->>SensorManager: 0b00010111 (ECG, SpO2, TempCore, NIBP)
-        
+
         deactivate I2CDriver
-        
+
         SensorManager->>SensorManager: Parse status bits
         SensorManager->>SensorManager: Update sensors_[ECG].attached = true
         SensorManager->>SensorManager: Update sensors_[SpO2].attached = true
         SensorManager->>SensorManager: Update sensors_[TempCore].attached = true
         SensorManager->>SensorManager: Update sensors_[NIBP].attached = true
         SensorManager->>SensorManager: Update sensors_[TempSkin].attached = false
-        
+
         SensorManager-->>SensorScanThread: 4 sensors detected
         deactivate SensorManager
     end
@@ -284,17 +284,17 @@ sequenceDiagram
     participant Browser
     participant WebServer
     participant Authentication
-    
+
     Browser->>WebServer: POST /api/login<br/>{username, password}
     activate WebServer
-    
+
     WebServer->>WebServer: Parse JSON body
     WebServer->>Authentication: validateLogin(username, password)
     activate Authentication
-    
+
     Authentication->>Authentication: hashPassword(password)
     Authentication->>Authentication: Compare with stored hash
-    
+
     alt Valid credentials
         Authentication-->>WebServer: true
         WebServer->>Browser: 200 OK<br/>{success: true}
@@ -302,7 +302,7 @@ sequenceDiagram
         Authentication-->>WebServer: false
         WebServer->>Browser: 401 Unauthorized<br/>{success: false, error: "Invalid credentials"}
     end
-    
+
     deactivate Authentication
     deactivate WebServer
 ```
@@ -316,21 +316,21 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Initialized : Constructor
-    
+
     Initialized --> Starting : start()
     Starting --> InitializingSensors : Initialize SensorManager
     InitializingSensors --> LaunchingThreads : Sensors ready
     LaunchingThreads --> Running : All threads launched
-    
+
     Running --> Running : Handle HTTP requests
     Running --> Running : Stream SSE data
     Running --> Running : Scan sensors
-    
+
     Running --> Stopping : stop() called
     Stopping --> JoiningThreads : Notify all threads
     JoiningThreads --> Stopped : All threads joined
     Stopped --> [*]
-    
+
     note right of Running
         Concurrent operations:
         - serverThread (HTTP)
@@ -344,25 +344,25 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> Unknown : System startup
-    
+
     Unknown --> Scanning : First scan
     Scanning --> Present : Device detected
     Scanning --> Absent : No device
-    
+
     Present --> Scanning : Rescan (every 3s)
     Absent --> Scanning : Rescan (every 3s)
-    
+
     Present --> Disconnected : Device removed
     Absent --> Connected : Device plugged in
-    
+
     Disconnected --> Scanning : Next scan
     Connected --> Scanning : Next scan
-    
+
     note right of Present
         sensors_[type].attached = true
         Sensor data enabled in UI
     end note
-    
+
     note right of Absent
         sensors_[type].attached = false
         Sensor chart hidden in UI
@@ -374,13 +374,13 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> Closed : Constructor
-    
+
     Closed --> Opening : open()
     Opening --> Open : /dev/i2c-1 opened
     Opening --> Closed : Open failed
-    
+
     Open --> Communicating : Command sent
-    
+
     state Communicating {
         [*] --> WritingCommand
         WritingCommand --> WaitingForResponse
@@ -388,13 +388,13 @@ stateDiagram-v2
         ReadingResponse --> [*] : Success
         ReadingResponse --> [*] : Timeout/Error
     }
-    
+
     Communicating --> Open : Transaction complete
-    
+
     Open --> Closing : close()
     Closing --> Closed
     Closed --> [*]
-    
+
     note right of Open
         Operations available:
         - pingHub()
@@ -409,9 +409,9 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> Initialized : Constructor (time = 0)
-    
+
     Initialized --> Generating : generate() called
-    
+
     state Generating {
         [*] --> CalculateECG
         CalculateECG --> CalculateSpO2
@@ -420,12 +420,12 @@ stateDiagram-v2
         CalculatePleth --> CalculateVitals
         CalculateVitals --> [*] : Return SensorData
     }
-    
+
     Generating --> AdvancingTime : tick(dt)
     AdvancingTime --> Generating : time += dt
-    
+
     Generating --> Initialized : reset()
-    
+
     note right of Generating
         Uses sinusoidal functions
         with physiological parameters:
@@ -444,6 +444,7 @@ stateDiagram-v2
 **Perfect encapsulation demonstrated throughout:**
 
 #### WebServer Class
+
 ```cpp
 class WebServer {
 private:
@@ -453,12 +454,12 @@ private:
     std::atomic<bool> running_;
     std::unique_ptr<SensorManager> sensorMgr_;
     std::unique_ptr<httplib::Server> server_;
-    
+
     // Private methods - implementation details hidden
     void serverThread();
     void dataStreamThread();
     void sensorScanThread();
-    
+
 public:
     // Public interface - controlled access only
     void start();
@@ -469,22 +470,24 @@ public:
 ```
 
 **Benefits:**
+
 - ✅ Internal state completely hidden
 - ✅ Controlled access via public interface
 - ✅ Implementation can change without affecting clients
 - ✅ Thread safety enforced internally (mutex protection)
 
 #### SensorManager Class
+
 ```cpp
 class SensorManager {
 private:
     std::unique_ptr<I2CDriver> i2c_;          // Composition
     std::map<SensorType, SensorInfo> sensors_; // Internal storage
     bool mockMode_;                            // Configuration
-    
+
     void initializeSensorMap();                // Private helper
     SensorId sensorTypeToId(SensorType type) const;
-    
+
 public:
     bool initialize();
     int scanSensors();
@@ -494,6 +497,7 @@ public:
 ```
 
 **Benefits:**
+
 - ✅ I2C driver abstracted away
 - ✅ Sensor map implementation hidden
 - ✅ Type conversions encapsulated
@@ -506,6 +510,7 @@ public:
 **Abstract interfaces through pure virtual behavior:**
 
 #### I2C Communication Interface
+
 ```cpp
 // Protocol-based abstraction
 class I2CDriver {
@@ -514,7 +519,7 @@ public:
     virtual bool open() = 0;        // Platform-specific
     virtual void close() = 0;
     virtual bool isOpen() const = 0;
-    
+
     // Protocol abstraction
     virtual bool pingHub() = 0;
     virtual uint8_t scanSensors() = 0;
@@ -573,6 +578,7 @@ class SensorManager {
 ```
 
 **Benefits:**
+
 - ✅ Flexible composition at runtime
 - ✅ No inheritance hierarchy complexity
 - ✅ Easy to mock and test
@@ -588,8 +594,8 @@ class SensorManager {
 class WebServer {
 public:
     // Dependencies injected via constructor
-    WebServer(int port = 8080, 
-              const std::string& webRoot = \"./web\", 
+    WebServer(int port = 8080,
+              const std::string& webRoot = \"./web\",
               bool mockSensors = false)
     {
         // Create dependencies based on configuration
@@ -609,6 +615,7 @@ public:
 ```
 
 **Benefits:**
+
 - ✅ Testable in isolation
 - ✅ Mock mode for development
 - ✅ Configuration-driven behavior
@@ -619,13 +626,13 @@ public:
 
 #### Single Responsibility Principle (SRP)
 
-| Class | Single Responsibility |
-|-------|----------------------|
-| `WebServer` | HTTP server management and request routing |
-| `SensorManager` | Sensor detection and status management |
-| `I2CDriver` | I2C hardware communication |
-| `SignalGenerator` | Waveform synthesis |
-| `Authentication` | User credential validation |
+| Class             | Single Responsibility                      |
+| ----------------- | ------------------------------------------ |
+| `WebServer`       | HTTP server management and request routing |
+| `SensorManager`   | Sensor detection and status management     |
+| `I2CDriver`       | I2C hardware communication                 |
+| `SignalGenerator` | Waveform synthesis                         |
+| `Authentication`  | User credential validation                 |
 
 #### Open/Closed Principle (OCP)
 
@@ -639,7 +646,7 @@ private:
         double spO2Freq = 1.2;
         // New parameters can be added
     };
-    
+
 public:
     // Algorithm uses parameters polymorphically
     SensorData generate();
@@ -682,6 +689,7 @@ class SensorManager {
 ## Design Patterns Applied
 
 ### 1. Singleton Pattern
+
 ```cpp
 class Authentication {
     // Static utility class (implicit singleton)
@@ -690,6 +698,7 @@ class Authentication {
 ```
 
 ### 2. Factory Pattern
+
 ```cpp
 // I2CDriver creation based on mode
 std::unique_ptr<I2CDriver> createDriver(bool mockMode) {
@@ -701,6 +710,7 @@ std::unique_ptr<I2CDriver> createDriver(bool mockMode) {
 ```
 
 ### 3. Strategy Pattern
+
 ```cpp
 // SignalGenerator uses strategy for different waveforms
 class SignalGenerator {
@@ -716,6 +726,7 @@ class SignalGenerator {
 ```
 
 ### 4. Observer Pattern
+
 ```cpp
 // WebServer notifies connected clients via SSE
 class WebServer {
@@ -730,12 +741,13 @@ class WebServer {
 ```
 
 ### 5. Thread Pool Pattern
+
 ```cpp
 class WebServer {
     std::unique_ptr<std::thread> serverThreadHandle_;
     std::unique_ptr<std::thread> dataThreadHandle_;
     std::unique_ptr<std::thread> sensorScanThreadHandle_;
-    
+
     // Managed thread lifecycle
     void start() {
         serverThreadHandle_ = std::make_unique<std::thread>(&WebServer::serverThread, this);
@@ -752,11 +764,13 @@ class WebServer {
 This technical design demonstrates:
 
 ✅ **Three diagram types:**
+
 - Class diagrams (system architecture, enums, protocols)
 - Sequence diagrams (startup, streaming, sensor detection, authentication)
 - State diagrams (webserver, sensor, I2C, signal generation)
 
 ✅ **Object-Oriented Principles:**
+
 - **Encapsulation:** Perfect data hiding with private members and public interfaces
 - **Abstraction:** Protocol-based interfaces, abstract hardware operations
 - **Composition:** Preferred over inheritance throughout
@@ -764,6 +778,7 @@ This technical design demonstrates:
 - **SOLID Principles:** All five principles demonstrated
 
 ✅ **Advanced Design:**
+
 - Multiple design patterns (Singleton, Factory, Strategy, Observer, Thread Pool)
 - Thread-safe concurrent programming
 - Platform abstraction (Linux I2C vs Mock)
@@ -778,16 +793,16 @@ This architecture is production-ready, maintainable, extensible, and testable.
 
 ### Web Server HTTP API
 
-| Endpoint | Method | Description | Request | Response |
-|----------|--------|-------------|---------|----------|
-| `/` | GET | Serve dashboard UI | - | `text/html` |
-| `/login.html` | GET | Serve login page | - | `text/html` |
-| `/api/login` | POST | Authenticate user | `{username, password}` | `{success: bool, error?: string}` |
-| `/api/logout` | POST | End session | - | `{success: bool}` |
-| `/api/sensors` | GET | Get sensor status | - | `{sensors: [{type, attached, lastValue}]}` |
-| `/api/status` | GET | Server health check | - | `{running: bool, uptime: number, clients: number}` |
-| `/api/brightness` | POST | Set screen brightness (Pi only) | `{brightness: number}` | `{success: bool}` |
-| `/ws` | GET | Real-time data stream (SSE) | - | Server-Sent Events stream |
+| Endpoint          | Method | Description                     | Request                | Response                                           |
+| ----------------- | ------ | ------------------------------- | ---------------------- | -------------------------------------------------- |
+| `/`               | GET    | Serve dashboard UI              | -                      | `text/html`                                        |
+| `/login.html`     | GET    | Serve login page                | -                      | `text/html`                                        |
+| `/api/login`      | POST   | Authenticate user               | `{username, password}` | `{success: bool, error?: string}`                  |
+| `/api/logout`     | POST   | End session                     | -                      | `{success: bool}`                                  |
+| `/api/sensors`    | GET    | Get sensor status               | -                      | `{sensors: [{type, attached, lastValue}]}`         |
+| `/api/status`     | GET    | Server health check             | -                      | `{running: bool, uptime: number, clients: number}` |
+| `/api/brightness` | POST   | Set screen brightness (Pi only) | `{brightness: number}` | `{success: bool}`                                  |
+| `/ws`             | GET    | Real-time data stream (SSE)     | -                      | Server-Sent Events stream                          |
 
 ### SSE Data Format
 
@@ -803,11 +818,11 @@ This architecture is production-ready, maintainable, extensible, and testable.
   "temp_skin": 36.8,
   "timestamp": 1234.567,
   "sensors": {
-    "ecg": {"attached": true},
-    "spo2": {"attached": true},
-    "tempCore": {"attached": true},
-    "tempSkin": {"attached": false},
-    "nibp": {"attached": true}
+    "ecg": { "attached": true },
+    "spo2": { "attached": true },
+    "tempCore": { "attached": true },
+    "tempSkin": { "attached": false },
+    "nibp": { "attached": true }
   }
 }
 ```
@@ -824,6 +839,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -ffast-math -flto")
 ```
 
 **Flags explained:**
+
 - `-O3` - Maximum optimization level
 - `-march=native` - Use Pi 400 CPU features (ARMv8-A)
 - `-ffast-math` - Fast floating-point operations
@@ -832,6 +848,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -ffast-math -flto")
 ### Build Caching
 
 Uses **ccache** for faster incremental builds:
+
 ```bash
 # First build: 8-10 minutes
 # Incremental: 5-30 seconds
@@ -859,16 +876,16 @@ cmake --build build
 
 ## Performance Metrics
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **Build Time (first)** | 8-10 min | Full compilation w/ optimization |
-| **Build Time (incremental)** | 5-30 sec | With ccache enabled |
-| **Frame Rate** | 20 FPS | Canvas rendering rate |
-| **Update Interval** | 50 ms | Data stream from backend |
-| **Memory Usage** | ~50 MB | RSS (resident set size) |
-| **CPU Usage** | ~15% | Single core (Pi 400 @ 1.8 GHz) |
-| **Network Bandwidth** | ~10 KB/s | Per SSE connection |
-| **Sensor Scan Rate** | 3 sec | Hot-plug detection interval |
+| Metric                       | Value    | Notes                            |
+| ---------------------------- | -------- | -------------------------------- |
+| **Build Time (first)**       | 8-10 min | Full compilation w/ optimization |
+| **Build Time (incremental)** | 5-30 sec | With ccache enabled              |
+| **Frame Rate**               | 20 FPS   | Canvas rendering rate            |
+| **Update Interval**          | 50 ms    | Data stream from backend         |
+| **Memory Usage**             | ~50 MB   | RSS (resident set size)          |
+| **CPU Usage**                | ~15%     | Single core (Pi 400 @ 1.8 GHz)   |
+| **Network Bandwidth**        | ~10 KB/s | Per SSE connection               |
+| **Sensor Scan Rate**         | 3 sec    | Hot-plug detection interval      |
 
 ---
 
@@ -916,6 +933,7 @@ journalctl --user -u curecraft.service --since "1 hour ago"
 ### Manual Testing
 
 1. **Mock Mode (No Hardware):**
+
    ```bash
    ./scripts/run-mock.sh
    # Open http://localhost:8080
@@ -923,6 +941,7 @@ journalctl --user -u curecraft.service --since "1 hour ago"
    ```
 
 2. **Multi-Tab Test:**
+
    ```bash
    # Open multiple browser tabs
    # Verify waveforms stay synchronized
@@ -955,6 +974,7 @@ curl http://localhost:8080/api/sensors
 ### Build Issues
 
 **CMake not found:**
+
 ```bash
 # Mac
 brew install cmake
@@ -964,6 +984,7 @@ sudo apt install cmake
 ```
 
 **Compilation errors:**
+
 ```bash
 # Clean rebuild
 rm -rf build
@@ -974,6 +995,7 @@ cmake --build build
 ### Runtime Issues
 
 **Port 8080 already in use:**
+
 ```bash
 # Find and kill process
 lsof -ti:8080 | xargs kill -9
@@ -983,6 +1005,7 @@ lsof -ti:8080 | xargs kill -9
 ```
 
 **I2C permission denied (Pi):**
+
 ```bash
 # Add user to i2c group
 sudo usermod -a -G i2c $USER
@@ -990,6 +1013,7 @@ sudo usermod -a -G i2c $USER
 ```
 
 **Sensors not detected:**
+
 ```bash
 # Check I2C bus
 i2cdetect -y 1
@@ -997,4 +1021,3 @@ i2cdetect -y 1
 # Check logs
 journalctl --user -u curecraft.service -n 50
 ```
-

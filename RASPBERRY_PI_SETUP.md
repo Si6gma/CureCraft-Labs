@@ -21,6 +21,7 @@ The system communicates with the SAMD21 SensorHub via I2C:
 - This uses **I2C Bus 1** (`/dev/i2c-1`)
 
 **Enable I2C on Raspberry Pi:**
+
 ```bash
 sudo raspi-config
 # Interface Options → I2C → Enable
@@ -28,6 +29,7 @@ sudo reboot
 ```
 
 Verify I2C is enabled:
+
 ```bash
 ls /dev/i2c-*
 # Should show: /dev/i2c-1
@@ -54,17 +56,20 @@ Install dependencies and configure the system:
 ```
 
 **What it installs:**
+
 - Build tools: `cmake`, `ninja-build`, `ccache`, `build-essential`
 - I2C tools: `i2c-tools`, `libi2c-dev`
 - System libraries: `libssl-dev`, `libpthread-stubs0-dev`
 
 **Command aliases created in `~/bin`:**
+
 - `upd` → Update code and deploy
 - `status` → Check service status
 - `jctl` → View live logs
 - `jclr` → Clear old logs
 
 After setup, restart your shell or run:
+
 ```bash
 source ~/.bashrc
 ```
@@ -80,6 +85,7 @@ upd
 ```
 
 **Build times:**
+
 - **First build**: ~8-10 minutes (compiles all dependencies, populates ccache)
 - **Incremental builds**: 5-30 seconds (only changed files)
 
@@ -94,6 +100,7 @@ The `deploy.sh` script automates the complete update and deployment process:
 ```
 
 **What it does:**
+
 1. Pulls latest changes from git (`git pull`)
 2. Creates/updates build directory
 3. Configures CMake with optimizations (`-O3`, `-march=native`, LTO)
@@ -102,6 +109,7 @@ The `deploy.sh` script automates the complete update and deployment process:
 6. Restarts the service
 
 **Build optimizations:**
+
 - **ccache**: 95% faster incremental builds
 - **-O3**: Maximum performance optimization
 - **-march=native**: Uses Pi 400 CPU features
@@ -159,12 +167,12 @@ This ensures the service starts even when not logged in via SSH/VNC.
 
 After running `install-dependencies.sh`, these shortcuts are available:
 
-| Alias | Full Command | Description |
-|-------|-------------|-------------|
-| `upd` | `./scripts/deploy.sh` | Pull latest code, rebuild, restart service |
-| `status` | `./scripts/status.sh` | Show service status |
-| `jctl` | `journalctl --user -u curecraft.service -f` | Follow live logs |
-| `jclr` | `journalctl --user --vacuum-time=1s` | Clear old journal logs |
+| Alias    | Full Command                                | Description                                |
+| -------- | ------------------------------------------- | ------------------------------------------ |
+| `upd`    | `./scripts/deploy.sh`                       | Pull latest code, rebuild, restart service |
+| `status` | `./scripts/status.sh`                       | Show service status                        |
+| `jctl`   | `journalctl --user -u curecraft.service -f` | Follow live logs                           |
+| `jclr`   | `journalctl --user --vacuum-time=1s`        | Clear old journal logs                     |
 
 ---
 
@@ -193,6 +201,7 @@ http://<pi-ip-address>:8080
 ```
 
 Default credentials:
+
 - **Username**: `admin`
 - **Password**: `admin`
 
@@ -203,21 +212,25 @@ Default credentials:
 ### Service Won't Start
 
 **Check service status:**
+
 ```bash
 status
 ```
 
 **View detailed logs:**
+
 ```bash
 journalctl --user -u curecraft.service -n 100
 ```
 
 **Common causes:**
+
 - Port 8080 already in use
 - Web directory not found
 - I2C bus not accessible
 
 **Try manual run:**
+
 ```bash
 systemctl --user stop curecraft.service
 cd ~/Code/CureCraft-Labs/build
@@ -227,17 +240,20 @@ cd ~/Code/CureCraft-Labs/build
 ### Build Fails
 
 **Clean rebuild:**
+
 ```bash
 rm -rf build/
 upd
 ```
 
 **Check ccache:**
+
 ```bash
 ccache --show-stats
 ```
 
 If ccache isn't working:
+
 ```bash
 sudo apt-get install ccache
 ./scripts/install-dependencies.sh
@@ -246,11 +262,13 @@ sudo apt-get install ccache
 ### I2C Not Working
 
 **Verify I2C is enabled:**
+
 ```bash
 ls /dev/i2c-*
 ```
 
 **Check for SensorHub:**
+
 ```bash
 sudo i2cdetect -y 1
 ```
@@ -258,6 +276,7 @@ sudo i2cdetect -y 1
 Should show device at `0x08` if hub is connected.
 
 **Enable I2C if missing:**
+
 ```bash
 sudo raspi-config
 # Interface Options → I2C → Enable
@@ -267,22 +286,26 @@ sudo reboot
 ### Web Interface Not Accessible
 
 **Check service is running:**
+
 ```bash
 status
 ```
 
 **Verify port is listening:**
+
 ```bash
 sudo netstat -tulpn | grep 8080
 ```
 
 **Check firewall (if enabled):**
+
 ```bash
 sudo ufw status
 sudo ufw allow 8080/tcp
 ```
 
 **Try different port:**
+
 ```bash
 systemctl --user stop curecraft.service
 cd ~/Code/CureCraft-Labs/build
@@ -292,6 +315,7 @@ cd ~/Code/CureCraft-Labs/build
 ### Slow Builds
 
 **Check ccache stats:**
+
 ```bash
 ccache --show-stats
 ```
@@ -299,11 +323,13 @@ ccache --show-stats
 Look for high hit rate (should be >90% after first build).
 
 **Configure ccache size:**
+
 ```bash
 ccache --max-size=2G
 ```
 
 **View cache location:**
+
 ```bash
 du -sh ~/.ccache
 ```
@@ -311,16 +337,19 @@ du -sh ~/.ccache
 ### Disk Space Issues
 
 **Clear old logs:**
+
 ```bash
 jclr
 ```
 
 **Check disk usage:**
+
 ```bash
 df -h
 ```
 
 **Clear build artifacts:**
+
 ```bash
 rm -rf ~/Code/CureCraft-Labs/build
 ```
@@ -348,11 +377,13 @@ nano ~/.config/systemd/user/curecraft.service
 ```
 
 Add `--port` argument to `ExecStart`:
+
 ```
 ExecStart=/home/pi/Code/CureCraft-Labs/scripts/start-curecraft.sh --port 3000
 ```
 
 Reload and restart:
+
 ```bash
 systemctl --user daemon-reload
 systemctl --user restart curecraft.service
@@ -361,11 +392,13 @@ systemctl --user restart curecraft.service
 ### Performance Tuning
 
 **VNC optimization:**
+
 - Use solid colors instead of gradients
 - Limit resolution to 1024x768
 - Disable desktop animations
 
 **Build performance:**
+
 ```bash
 # See detailed ccache stats
 ccache --show-stats --verbose

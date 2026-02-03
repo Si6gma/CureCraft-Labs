@@ -5,6 +5,7 @@
 This firmware runs on the SAMD21 SensorHub board and enables automatic sensor detection for the CureCraft Patient Monitor.
 
 **Key Features:**
+
 - 🔄 **Automatic Sensor Polling**: Scans all sensor buses every 5 seconds
 - 🔌 **Hot-Plug Detection**: Automatically detects when sensors are connected/disconnected
 - 📡 **I2C Slave Interface**: Communicates with Raspberry Pi at address 0x08
@@ -13,17 +14,20 @@ This firmware runs on the SAMD21 SensorHub board and enables automatic sensor de
 ## Hardware Connections
 
 ### Raspberry Pi 400 Connection
+
 - **GPIO 2 (SDA)** → SAMD21 PA23 (W0_SDA)
 - **GPIO 3 (SCL)** → SAMD21 PA22 (W0_SCL)
 - This is **I2C Bus 1** on the Pi
 
 ### Sensor Buses
+
 - **Bus A (W1)**: PA12 (SDA) / PA13 (SCL) → ECG (0x40), SpO2 (0x41), or Temp (0x68)
 - **Bus B (W2)**: PA16 (SDA) / PA17 (SCL) → NIBP (0x43) or Temp (0x68)
 
 ## I2C Protocol
 
 ### Hub Address
+
 - `0x08` - SAMD21 SensorHub address on Pi's I2C bus
 
 ### Automatic Sensor Scanning
@@ -35,6 +39,7 @@ When a sensor is connected or disconnected, the hub logs the event to Serial and
 ### Commands
 
 #### PING (0x00)
+
 Check if hub is alive.
 
 ```
@@ -43,6 +48,7 @@ Pi reads:    0x42 (magic response)
 ```
 
 #### SCAN (0x01)
+
 Get cached sensor status (does NOT trigger a new scan).
 
 ```
@@ -51,6 +57,7 @@ Pi reads:    Status byte (most recent scan result)
 ```
 
 **Status Byte Format:**
+
 - Bit 0: ECG present (0x40 on W1)
 - Bit 1: SpO2 present (0x41 on W1)
 - Bit 2: Core Temperature present (0x68 on W1)
@@ -59,6 +66,7 @@ Pi reads:    Status byte (most recent scan result)
 - Bits 5-7: Reserved (0)
 
 **Example:**
+
 - `0b00010100` (0x14) = Skin Temp and NIBP detected
 - `0b00011111` (0x1F) = All 5 sensor types detected
 - `0b00010000` (0x10) = Only Skin Temperature detected
@@ -119,7 +127,7 @@ sudo i2cset -y 1 0x08 0x00
 sudo i2cget -y 1 0x08
 # Should return: 0x42
 
-# Send SCAN command  
+# Send SCAN command
 sudo i2cset -y 1 0x08 0x01
 sudo i2cget -y 1 0x08
 # Returns status byte (e.g., 0x04 for temp sensor only)
@@ -133,20 +141,22 @@ sudo i2cget -y 1 0x08
 ## Troubleshooting
 
 **Hub not detected by Pi:**
+
 - Check I2C wiring (GPIO 2/3)
 - Verify power to SAMD21
 - Check Serial Monitor for startup message
 
 **Sensors not detected:**
-- Verify sensor I2C addresses  
+
+- Verify sensor I2C addresses
 - Check W1/W2 bus wiring
 - Test sensors with `i2cdetect` if directly connected to Pi
 
 **No Serial output:**
+
 - Check baud rate (115200)
 - Ensure USB/Serial connection active
 - Some boards may need DTR/RTS toggle
-
 
 ## Files
 
