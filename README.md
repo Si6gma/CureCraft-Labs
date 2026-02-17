@@ -1,3 +1,7 @@
+<!--
+Suggested GitHub Topics: medical-monitoring, raspberry-pi, cpp, real-time, web-interface, iot, healthcare, embedded-systems, server-sent-events
+-->
+
 # CureCraft Patient Monitor
 
 > **Real-time medical monitoring system for Raspberry Pi with web-based interface**
@@ -141,6 +145,17 @@ cmake --build build
 - **Hardware:** I2C, SAMD21 Sensor Hub
 
 ---
+
+## Key Learnings
+
+- **Real-time Data Streaming**: Server-Sent Events (SSE) provide lower latency than polling for medical waveform visualization
+- **Embedded-Hybrid Architecture**: Separating sensor acquisition (firmware) from processing (C++ backend) enables flexible deployment
+- **Mock-Driven Development**: Building a comprehensive mock mode accelerated development before hardware was ready
+- **Cross-Platform CMake**: Supporting both macOS development and Raspberry Pi production required careful dependency management
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file
 
 ## Team
 
