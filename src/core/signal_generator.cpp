@@ -137,7 +137,7 @@ SignalGenerator::SensorData SignalGenerator::generate()
     return data;
 }
 
-void SignalGenerator::tick(double dt)
+void SignalGenerator::tick(double /* dt */)
 {
     // No longer needed - time is now wall-clock based
     // Kept for API compatibility
