@@ -37,6 +37,14 @@ if(ipo_supported)
 endif()
 
 # ============================================================================
+# Third-Party Libraries
+# ============================================================================
+
+# nlohmann/json (header-only)
+set(NLOHMANN_JSON_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/third_party")
+message(STATUS "✓ Using nlohmann/json (header-only)")
+
+# ============================================================================
 # Main Application (Web Server + Hardware Backend)
 # ============================================================================
 
@@ -87,6 +95,7 @@ endif()
 # Include directories
 target_include_directories(curecraft PRIVATE
         "${PROJECT_SOURCE_DIR}/include"
+        ${NLOHMANN_JSON_INCLUDE_DIR}
         ${MOSQUITTO_INCLUDE_DIRS}
 )
 
@@ -108,6 +117,51 @@ install(DIRECTORY "${PROJECT_SOURCE_DIR}/web/"
         PATTERN "*.html"
         PATTERN "*.css"
         PATTERN "*.js")
+
+# ============================================================================
+# Test Suite
+# ============================================================================
+
+enable_testing()
+
+# Test executable sources
+set(TEST_SOURCES
+    "${PROJECT_SOURCE_DIR}/tests/test_main.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/catch_amalgamated.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/test_signal_generator.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/test_sensor_manager.cpp"
+    "${PROJECT_SOURCE_DIR}/src/core/signal_generator.cpp"
+    "${PROJECT_SOURCE_DIR}/src/core/SensorDataStore.cpp"
+    "${PROJECT_SOURCE_DIR}/src/hardware/sensor_manager.cpp"
+    "${PROJECT_SOURCE_DIR}/src/hardware/i2c_driver.cpp"
+)
+
+# Create test executable
+add_executable(curecraft_tests ${TEST_SOURCES})
+
+# Test include directories
+target_include_directories(curecraft_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/include"
+    "${PROJECT_SOURCE_DIR}/tests"
+    "${PROJECT_SOURCE_DIR}/third_party"
+)
+
+# Test compiler options
+target_compile_options(curecraft_tests PRIVATE
+    -O2
+    -Wall
+    -Wextra
+)
+
+# Link test executable
+target_link_libraries(curecraft_tests PRIVATE
+    Threads::Threads
+)
+
+# Add tests to CTest
+add_test(NAME SignalGeneratorTests COMMAND curecraft_tests "[signal_generator]")
+add_test(NAME SensorManagerTests COMMAND curecraft_tests "[sensor_manager]")
+add_test(NAME AllTests COMMAND curecraft_tests)
 
 # ============================================================================
 # Build Summary

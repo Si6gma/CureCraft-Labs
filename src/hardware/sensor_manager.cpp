@@ -1,4 +1,5 @@
 #include "hardware/sensor_manager.h"
+#include <nlohmann/json.hpp>
 #include <iostream>
 #include <sstream>
 #include <bitset>
@@ -205,16 +206,15 @@ const SensorInfo &SensorManager::getSensorInfo(SensorType type) const
 
 std::string SensorManager::getSensorStatusJson() const
 {
-    std::ostringstream json;
-    json << "{";
-    json << "\"ecg\":true,";
-    json << "\"spo2\":true,";
-    json << "\"temp_core\":true,";
-    json << "\"temp_skin\":true,";
-    json << "\"nibp\":true,";
-    json << "\"resp\":true";
-    json << "}";
-    return json.str();
+    using json = nlohmann::json;
+    json j;
+    j["ecg"] = true;
+    j["spo2"] = true;
+    j["temp_core"] = true;
+    j["temp_skin"] = true;
+    j["nibp"] = true;
+    j["resp"] = true;
+    return j.dump();
 }
 
 SensorId SensorManager::sensorTypeToId(SensorType type) const

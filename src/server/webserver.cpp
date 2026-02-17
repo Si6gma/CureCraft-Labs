@@ -2,6 +2,7 @@
 #include "httplib.h"
 #include "server/auth.h"
 #include "hardware/sensor_manager.h"
+#include <nlohmann/json.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -120,48 +121,59 @@ void WebServer::serverThread()
     
     
     server_->Post("/api/login", [this](const httplib::Request& req, httplib::Response& res) {
+        using json = nlohmann::json;
+        
         std::cout << "[API] Login request received from " << req.remote_addr << std::endl;
         std::cout << "[API] Request body: " << req.body << std::endl;
         
-        std::string body = req.body;
+        json response;
         
-        size_t userPos = body.find("\"username\":\"");
-        size_t passPos = body.find("\"password\":\"");
-        
-        if (userPos == std::string::npos || passPos == std::string::npos) {
-            std::cout << "[API] Login failed: Invalid request format" << std::endl;
-            res.set_content("{\"success\":false,\"error\":\"Invalid request\"}", "application/json");
+        try {
+            json body = json::parse(req.body);
+            
+            if (!body.contains("username") || !body.contains("password")) {
+                std::cout << "[API] Login failed: Invalid request format" << std::endl;
+                response["success"] = false;
+                response["error"] = "Invalid request";
+                res.set_content(response.dump(), "application/json");
+                res.status = 400;
+                return;
+            }
+            
+            std::string username = body["username"];
+            std::string password = body["password"];
+            
+            std::cout << "[API] Login attempt - username: " << username << std::endl;
+            
+            bool valid = Authentication::validateLogin(username, password);
+            
+            if (valid) {
+                std::cout << "[API] Login successful!" << std::endl;
+                response["success"] = true;
+                res.set_content(response.dump(), "application/json");
+            } else {
+                std::cout << "[API] Login failed: Invalid credentials" << std::endl;
+                response["success"] = false;
+                response["error"] = "Invalid credentials";
+                res.set_content(response.dump(), "application/json");
+                res.status = 401;
+            }
+        } catch (const json::exception& e) {
+            std::cout << "[API] Login failed: JSON parse error - " << e.what() << std::endl;
+            response["success"] = false;
+            response["error"] = "Invalid JSON";
+            res.set_content(response.dump(), "application/json");
             res.status = 400;
-            return;
-        }
-        
-        userPos += 12; // Length of "username":"
-        passPos += 12; // Length of "password":"
-        
-        size_t userEnd = body.find("\"", userPos);
-        size_t passEnd = body.find("\"", passPos);
-        
-        std::string username = body.substr(userPos, userEnd - userPos);
-        std::string password = body.substr(passPos, passEnd - passPos);
-        
-        std::cout << "[API] Login attempt - username: " << username << std::endl;
-        
-        bool valid = Authentication::validateLogin(username, password);
-        
-        if (valid) {
-            std::cout << "[API] Login successful!" << std::endl;
-            res.set_content("{\"success\":true}", "application/json");
-        } else {
-            std::cout << "[API] Login failed: Invalid credentials" << std::endl;
-            res.set_content("{\"success\":false,\"error\":\"Invalid credentials\"}", "application/json");
-            res.status = 401;
         }
     });
     
     // Logout endpoint
     server_->Post("/api/logout", [this](const httplib::Request& req, httplib::Response& res) {
+        using json = nlohmann::json;
         std::cout << "[API] Logout request received from " << req.remote_addr << std::endl;
-        res.set_content("{\"success\":true}", "application/json");
+        json response;
+        response["success"] = true;
+        res.set_content(response.dump(), "application/json");
     });
     
     // Sensor status endpoint
@@ -171,8 +183,11 @@ void WebServer::serverThread()
     });
     
     server_->Post("/api/brightness", [this](const httplib::Request& req, httplib::Response& res) {
+        using json = nlohmann::json;
         std::cout << "[API] Brightness change requested: " << req.body << std::endl;
-        res.set_content("{\"success\":true}", "application/json");
+        json response;
+        response["success"] = true;
+        res.set_content(response.dump(), "application/json");
     });
     
     // Server-Sent Events endpoint for real-time data
@@ -209,16 +224,15 @@ void WebServer::serverThread()
     
     // API endpoint to get server status
     server_->Get("/api/status", [this](const httplib::Request& req, httplib::Response& res) {
-        std::ostringstream json;
-        json << "{"
-             << "\"running\":true,"
-             << "\"clients\":" << getClientCount() << ","
-             << "\"updateRate\":" << updateRateHz_.load() << ","
-             << "\"time\":" << std::fixed << std::setprecision(2) << signalGen_.getTime() << ","
-             << "\"mockMode\":" << (mockMode_ ? "true" : "false")
-             << "}";
+        using json = nlohmann::json;
+        json j;
+        j["running"] = true;
+        j["clients"] = getClientCount();
+        j["updateRate"] = updateRateHz_.load();
+        j["time"] = signalGen_.getTime();
+        j["mockMode"] = mockMode_;
         
-        res.set_content(json.str(), "application/json");
+        res.set_content(j.dump(), "application/json");
     });
     
     // Helper to determine mime type
@@ -231,12 +245,15 @@ void WebServer::serverThread()
 
     // Serve static files - but NOT for /api paths (let those 404 if not explicitly handled)
     server_->Get("/.*", [this, getMimeType](const httplib::Request& req, httplib::Response& res) {
+        using json = nlohmann::json;
         std::string path = req.path;
         
         // Skip /api paths - they should be handled by explicit API handlers above
         if (path.find("/api/") == 0) {
             res.status = 404;
-            res.set_content("{\"error\":\"API endpoint not found\"}", "application/json");
+            json error;
+            error["error"] = "API endpoint not found";
+            res.set_content(error.dump(), "application/json");
             return;
         }
         
@@ -301,19 +318,25 @@ void WebServer::sensorScanThread()
 
 std::string WebServer::generateJsonData(const SignalGenerator::SensorData& data)
 {
-    std::ostringstream json;
-    json << std::fixed << std::setprecision(4);
-    json << "{"
-         << "\"ecg\":" << data.ecg << ","
-         << "\"spo2\":" << data.spo2 << ","
-         << "\"resp\":" << data.resp << ","
-         << "\"pleth\":" << data.pleth << ","
-         << "\"bp_systolic\":" << std::setprecision(1) << data.bp_systolic << ","
-         << "\"bp_diastolic\":" << std::setprecision(1) << data.bp_diastolic << ","
-         << "\"temp_cavity\":" << std::setprecision(2) << data.temp_cavity << ","
-         << "\"temp_skin\":" << std::setprecision(2) << data.temp_skin << ","
-         << "\"timestamp\":" << std::setprecision(4) << data.timestamp << ","
-         << "\"sensors\":" << sensorMgr_->getSensorStatusJson()
-         << "}";
-    return json.str();
+    using json = nlohmann::json;
+    
+    // Parse sensor status JSON from sensor manager
+    json sensors = json::parse(sensorMgr_->getSensorStatusJson(), nullptr, false);
+    if (sensors.is_discarded()) {
+        sensors = json::object();
+    }
+    
+    json j;
+    j["ecg"] = data.ecg;
+    j["spo2"] = data.spo2;
+    j["resp"] = data.resp;
+    j["pleth"] = data.pleth;
+    j["bp_systolic"] = data.bp_systolic;
+    j["bp_diastolic"] = data.bp_diastolic;
+    j["temp_cavity"] = data.temp_cavity;
+    j["temp_skin"] = data.temp_skin;
+    j["timestamp"] = data.timestamp;
+    j["sensors"] = sensors;
+    
+    return j.dump();
 }

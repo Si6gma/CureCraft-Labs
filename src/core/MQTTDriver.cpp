@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
+#include <cmath>
 #include <iostream>
 
 MQTTDriver::MQTTDriver(SensorDataStore& sensorStore)
@@ -206,6 +207,27 @@ void MQTTDriver::handleMessage_(const std::string& topic, const void* payload, i
     sensorStore_.setBpSystolic(static_cast<double>(value));
   } else if (topic == "heart/diastolicBP") {
     sensorStore_.setBpDiastolic(static_cast<double>(value));
+  } else if (topic == "heart/heartRate") {
+    // Convert heart rate to approximate ECG amplitude
+    // Normal ECG has P wave (~0.1mV), QRS complex (~1mV), T wave (~0.3mV)
+    // Map heart rate (30-200 bpm) to a normalized ECG signal
+    double normalizedEcg = 0.0;
+    if (value > 0) {
+      // Normalize around 75 BPM as baseline (0.5 amplitude)
+      normalizedEcg = 0.5 + (value - 75.0) / 300.0;
+      // Clamp to valid range
+      if (normalizedEcg < 0.1) normalizedEcg = 0.1;
+      if (normalizedEcg > 0.9) normalizedEcg = 0.9;
+    }
+    sensorStore_.setEcg(normalizedEcg);
+  } else if (topic == "heart/cardiacOutput") {
+    // Cardiac output can influence plethysmograph waveform
+    // Map CO (2-15 L/min) to pleth amplitude (0.3-0.9)
+    if (value > 0) {
+      double normalizedPleth = 0.3 + (value / 20.0);
+      if (normalizedPleth > 0.9) normalizedPleth = 0.9;
+      sensorStore_.setPleth(normalizedPleth);
+    }
   }
 
   UpdateCallback cbCopy;

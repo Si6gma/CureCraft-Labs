@@ -78,7 +78,7 @@ bool I2CDriver::pingHub()
 {
     if (mockMode_)
     {
-        std::cout << "[I2C Mock] PING -> 0xAA" << std::endl;
+        std::cout << "[I2C Mock] PING -> 0x42" << std::endl;
         return true;
     }
 
@@ -86,6 +86,7 @@ bool I2CDriver::pingHub()
     if (fd_ < 0)
         return false;
 
+    uint8_t cmd = static_cast<uint8_t>(HubCommand::PING);
     if (!writeByte(HUB_I2C_ADDRESS, cmd))
     {
         return false;
