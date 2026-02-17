@@ -56,6 +56,10 @@ find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)
 
+# Find cJSON (required by mosquitto on macOS)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CJSON REQUIRED libcjson)
+
 # Source files
 set(SOURCES
         "${PROJECT_SOURCE_DIR}/src/main.cpp"
@@ -97,17 +101,20 @@ target_include_directories(curecraft PRIVATE
         "${PROJECT_SOURCE_DIR}/include"
         ${NLOHMANN_JSON_INCLUDE_DIR}
         ${MOSQUITTO_INCLUDE_DIRS}
+        ${CJSON_INCLUDE_DIRS}
 )
 
-# Link directories (for mosquitto)
+# Link directories (for mosquitto and cJSON)
 target_link_directories(curecraft PRIVATE
         ${MOSQUITTO_LIBRARY_DIRS}
+        ${CJSON_LIBRARY_DIRS}
 )
 
 # Link libraries
 target_link_libraries(curecraft PRIVATE
         Threads::Threads
         ${MOSQUITTO_LIBRARIES}
+        ${CJSON_LIBRARIES}
 )
 
 # Install web assets

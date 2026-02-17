@@ -28,7 +28,7 @@ jobs:
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install cmake ninja mosquitto
+        brew install cmake ninja mosquitto cjson
     
     - name: Configure CMake
       run: |
