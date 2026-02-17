@@ -27,7 +27,7 @@ TEST_CASE("SensorManager - Initialization", "[sensor_manager]") {
     SECTION("Initialize in mock mode") {
         SensorManager mgr(true);
         // In mock mode, initialization should succeed or gracefully degrade
-        bool result = mgr.initialize();
+        (void)mgr.initialize();
         // Result may be true or false depending on I2C availability
         // Just verify it doesn't crash
         REQUIRE(true);

@@ -177,7 +177,7 @@ void WebServer::serverThread()
     });
     
     // Sensor status endpoint
-    server_->Get("/api/sensors", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Get("/api/sensors", [this](const httplib::Request& /* req */, httplib::Response& res) {
         std::string json = sensorMgr_->getSensorStatusJson();
         res.set_content(json, "application/json");
     });
@@ -191,7 +191,7 @@ void WebServer::serverThread()
     });
     
     // Server-Sent Events endpoint for real-time data
-    server_->Get("/ws", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Get("/ws", [this](const httplib::Request& /* req */, httplib::Response& res) {
         res.set_header("Content-Type", "text/event-stream");
         res.set_header("Cache-Control", "no-cache");
         res.set_header("Connection", "keep-alive");
@@ -199,7 +199,7 @@ void WebServer::serverThread()
         
         res.set_content_provider(
             "text/event-stream",
-            [this](size_t offset, httplib::DataSink& sink) {
+            [this](size_t /* offset */, httplib::DataSink& sink) {
                 const int intervalMs = 1000 / updateRateHz_.load();
                 
                 while (running_ && sink.is_writable()) {
@@ -223,7 +223,7 @@ void WebServer::serverThread()
     });
     
     // API endpoint to get server status
-    server_->Get("/api/status", [this](const httplib::Request& req, httplib::Response& res) {
+    server_->Get("/api/status", [this](const httplib::Request& /* req */, httplib::Response& res) {
         using json = nlohmann::json;
         json j;
         j["running"] = true;

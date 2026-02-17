@@ -15,10 +15,10 @@ namespace
 
 std::atomic<bool> shutdownRequested(false);
 
-void signalHandler(int signal)
+void signalHandler(int /* signal */)
 {
     const char *msg = "\n🛑 Shutdown signal received...\n";
-    write(STDERR_FILENO, msg, 31);
+    (void)write(STDERR_FILENO, msg, 31);
     shutdownRequested = true;
 }
 

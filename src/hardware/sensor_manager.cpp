@@ -181,7 +181,7 @@ bool SensorManager::isSensorAttached(SensorType type) const
     return false;
 }
 
-bool SensorManager::readSensor(SensorType type, float &value)
+bool SensorManager::readSensor(SensorType type, float &/* value */)
 {
     auto it = sensors_.find(type);
     if (it == sensors_.end())
