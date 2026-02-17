@@ -6,22 +6,23 @@
 #include "core/MQTTDriver.h"
 #include "core/SensorDataStore.h"
 
-namespace {
+namespace
+{
     constexpr int DEFAULT_PORT = 8080;
-    constexpr const char* DEFAULT_WEB_ROOT = "./web";
-    constexpr const char* FALLBACK_WEB_ROOT = "../web";
+    constexpr const char *DEFAULT_WEB_ROOT = "./web";
+    constexpr const char *FALLBACK_WEB_ROOT = "../web";
 }
 
 std::atomic<bool> shutdownRequested(false);
 
 void signalHandler(int signal)
 {
-    const char* msg = "\n🛑 Shutdown signal received...\n";
+    const char *msg = "\n🛑 Shutdown signal received...\n";
     write(STDERR_FILENO, msg, 31);
     shutdownRequested = true;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     std::cout << "============================================" << std::endl;
     std::cout << "  CureCraft Patient Monitor - Web Server   " << std::endl;
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
     int port = DEFAULT_PORT;
     std::string webRoot = DEFAULT_WEB_ROOT;
     bool mockSensors = false;
-    
+
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--port" && i + 1 < argc) {
@@ -45,8 +46,10 @@ int main(int argc, char* argv[])
             std::cout << std::endl;
             std::cout << "Options:" << std::endl;
             std::cout << "  --port PORT         HTTP server port (default: 8080)" << std::endl;
-            std::cout << "  --web-root DIR      Web assets directory (default: ./web)" << std::endl;
-            std::cout << "  --mock              Enable mock sensor mode (no hardware needed)" << std::endl;
+            std::cout << "  --web-root DIR      Web assets directory (default: ./web)"
+                      << std::endl;
+            std::cout << "  --mock              Enable mock sensor mode (no hardware needed)"
+                      << std::endl;
             std::cout << "  --help, -h          Show this help message" << std::endl;
             std::cout << std::endl;
             std::cout << "Example:" << std::endl;
@@ -68,19 +71,17 @@ int main(int argc, char* argv[])
     WebServer server(port, webRoot, mockSensors);
     server.start();
 
-    auto& store = SensorDataStore::instance();
+    auto &store = SensorDataStore::instance();
 
     MQTTDriver mqtt(store);
     mqtt.setKeepAlive(20);
 
-
-    mqtt.setBroker("127.0.0.1", 1883);        // change to broker IP if not local
-    mqtt.setClientId("curecraft");      // unique client id
+    mqtt.setBroker("127.0.0.1", 1883); // change to broker IP if not local
+    mqtt.setClientId("curecraft");     // unique client id
 
     if (!mqtt.connect()) {
         std::cerr << "MQTT connect failed\n";
     }
-
 
     std::cout << std::endl;
     std::cout << "✅ Server is running!" << std::endl;
@@ -95,7 +96,7 @@ int main(int argc, char* argv[])
 
     std::cout << "Stopping server..." << std::endl;
     server.stop();
-    
+
     std::cout << "✅ Server stopped cleanly" << std::endl;
     return 0;
 }
